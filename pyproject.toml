@@ -1,0 +1,46 @@
+[project]
+name = "make-certificate-chain"
+authors = [
+    {name = "Jacky Chen"}
+]
+description = "Resolve the certificate chain from X.509 PEM or DER Certificate."
+readme = "README.rst"
+license = {text = "MIT"}
+requires-python = ">=3.7"
+classifiers = [
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Utilities"
+]
+dependencies = [
+    "requests>=2.28.2",
+    "argcomplete>=2.0.0",
+    "cryptography>=39.0.1"
+]
+dynamic = [
+    "version"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.2.1", "coverage>=7.2.1"]
+
+[project.scripts]
+mkcertchain = "make_certificate_chain.__main__:main"
+
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "make_certificate_chain.VERSION"}
+
+[tool.setuptools.package-dir]
+make_certificate_chain = "make_certificate_chain"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::cryptography.utils.CryptographyDeprecationWarning"
+]
