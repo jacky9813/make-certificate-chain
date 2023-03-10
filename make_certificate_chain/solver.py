@@ -2,12 +2,14 @@ import typing
 import datetime
 import warnings
 import os
+import ssl
+import sys
 
 import cryptography.x509
 import cryptography.x509.extensions
 import requests
 
-from .warnings import SelfSignCertificateWarning, NotValidYetWarning, NearExpirationWarning
+from .warnings import SelfSignCertificateWarning, NotValidYetWarning, NearExpirationWarning, NotTrustedWarning
 from .exceptions import CertificateExpiredError, NoIssuerCertificateError
 
 
@@ -24,21 +26,27 @@ def get_system_ca(
     """
         Get the certificates from the system's CA list.
     """
-    if path is None:
-        for p in SYSTEM_CA_FILE:
-            if os.path.exists(p):
-                path = p
-                break
-    with open(path, mode="r", encoding="utf-8") as ca_fd:
-        ca = ca_fd.read()
-    ca_list = [
-        cryptography.x509.load_pem_x509_certificate(cert_pem)
-        for cert_pem in [
-            (CERTIFICATE_BEGIN + c).encode()
-            for c in ca.split(CERTIFICATE_BEGIN)
-            if c.strip() != ""
+    if sys.platform == "win32":
+        ca_list = [
+            cryptography.x509.load_der_x509_certificate(ca_info[0])
+            for ca_info in ssl.enum_certificates("root")
         ]
-    ]
+    else:
+        if path is None:
+            for p in SYSTEM_CA_FILE:
+                if os.path.exists(p):
+                    path = p
+                    break
+        with open(path, mode="r", encoding="utf-8") as ca_fd:
+            ca = ca_fd.read()
+        ca_list = [
+            cryptography.x509.load_pem_x509_certificate(cert_pem)
+            for cert_pem in [
+                (CERTIFICATE_BEGIN + c).encode()
+                for c in ca.split(CERTIFICATE_BEGIN)
+                if c.strip() != ""
+            ]
+        ]
     return {
         ca_cert.issuer.rfc4514_string(): ca_cert
         for ca_cert in ca_list
@@ -134,7 +142,7 @@ def get_issuer_certificate(
 
 def solve_cert_chain(
     server_cert: cryptography.x509.Certificate,
-    system_ca: typing.Optional[typing.Dict[str, cryptography.x509.Certificate]] = None,
+    known_certificate: typing.Optional[typing.Dict[str, cryptography.x509.Certificate]] = None,
     expire_warning: typing.Optional[datetime.timedelta] = None,
     include_root_ca: bool = False
 ) -> typing.Iterable[cryptography.x509.Certificate]:
@@ -155,19 +163,32 @@ def solve_cert_chain(
             SelfSignCertificateWarning
         )
         return [server_cert]
-    if system_ca is None:
-        system_ca = get_system_ca()
+    if known_certificate is None:
+        known_certificate = get_system_ca()
     chain = [server_cert]
-    cursor = server_cert
+    cursor: cryptography.x509.Certificate = server_cert
     while True:
+        final = False
         issuer = cursor.issuer.rfc4514_string()
-        if issuer in system_ca:
-            verify_certificate(cursor, system_ca[issuer], expire_warning)
-            if include_root_ca:
-                chain.append(system_ca[issuer])
-            break
-        issuer_cert = get_issuer_certificate(cursor)
+        if issuer in known_certificate:
+            issuer_cert = known_certificate[issuer]
+            final = True
+        elif issuer != cursor.subject.rfc4514_string():
+            issuer_cert = get_issuer_certificate(cursor)
+            known_certificate[issuer] = issuer_cert
+        else:
+            # Self sign certificate, could be Root CA
+            issuer_cert = cursor
+            final = True
+            warnings.warn(
+                "Resolved to an untrusted CA",
+                NotTrustedWarning
+            )
         verify_certificate(cursor, issuer_cert, expire_warning)
+        if final:
+            if include_root_ca:
+                chain.append(issuer_cert)
+            break
         chain.append(issuer_cert)
         cursor = issuer_cert
     return chain
