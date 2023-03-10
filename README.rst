@@ -2,6 +2,8 @@
 Certificate Chain Maker
 =======================
 
+.. image:: https://github.com/jacky9813/make-certificate-chain/actions/workflows/test.yml/badge.svg
+
 This program helps system administrators to configure a Web Service that
 provides full SSL/TLS chain when handshaking.
 
