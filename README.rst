@@ -15,9 +15,6 @@ a little performance benefit for client verifying the server certificate.
 System Requirements
 ===================
 
-- Linux-based system
-    - It is required that the system has a pool of trusted CA.
-      Install ``ca-certificates`` package if not installed.
 - Python 3.7+
 
 Usage
