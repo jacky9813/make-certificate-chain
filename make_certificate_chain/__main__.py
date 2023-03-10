@@ -9,11 +9,6 @@ import cryptography.x509
 
 from .solver import solve_cert_chain, CERTIFICATE_BEGIN
 
-if sys.platform != "linux":
-    raise NotImplementedError(
-        "The use of this program is not supported for non-Linux platform"
-    )
-
 
 def main():
     warnings.simplefilter("always")
@@ -69,8 +64,10 @@ def main():
 
     print("=" * 10, file=sys.stderr)
     for cert in chain:
-        print("Subject:", cert.subject.rfc4514_string(), file=sys.stderr)
-        print("Issuer: ", cert.issuer.rfc4514_string(), file=sys.stderr)
+        print("Subject:   ", cert.subject.rfc4514_string(), file=sys.stderr)
+        print("Issuer:    ", cert.issuer.rfc4514_string(), file=sys.stderr)
+        print("Not Before:", cert.not_valid_before.strftime("%Y-%m-%dT%H:%M:%SZ"), file=sys.stderr)
+        print("Not After: ", cert.not_valid_after.strftime("%Y-%m-%dT%H:%M:%SZ"), file=sys.stderr)
         print("=" * 10, file=sys.stderr)
         print(
             cert.public_bytes(
