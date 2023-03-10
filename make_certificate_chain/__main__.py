@@ -8,11 +8,17 @@ import warnings
 import cryptography.x509
 
 from .solver import solve_cert_chain, CERTIFICATE_BEGIN
+from . import VERSION
 
 
 def main():
     warnings.simplefilter("always")
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-v", "--version",
+        action="version",
+        version=VERSION
+    )
     parser.add_argument(
         "--expire-warning",
         type=float,
