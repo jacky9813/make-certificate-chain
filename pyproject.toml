@@ -30,6 +30,9 @@ dev = ["pytest>=7.2.1", "coverage>=7.2.1"]
 [project.scripts]
 mkcertchain = "make_certificate_chain.__main__:main"
 
+[project.urls]
+repository = "https://github.com/jacky9813/make-certificate-chain"
+
 [build-system]
 requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"
