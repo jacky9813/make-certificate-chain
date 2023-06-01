@@ -79,5 +79,13 @@ def cert_with_unknown_ca() -> x509.Certificate:
 
 @pytest.fixture
 def example_com_cert() -> x509.Certificate:
+    # Testing X509 certificate
     cert = ssl.get_server_certificate(("www.example.com", 443))
+    return x509.load_pem_x509_certificate(cert.encode())
+
+
+@pytest.fixture()
+def epki_com_tw_cert() -> x509.Certificate:
+    # Testing PKCS7 certificates
+    cert = ssl.get_server_certificate(("epki.com.tw", 443))
     return x509.load_pem_x509_certificate(cert.encode())

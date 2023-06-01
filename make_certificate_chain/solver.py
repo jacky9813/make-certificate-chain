@@ -7,6 +7,7 @@ import sys
 
 import cryptography.x509
 import cryptography.x509.extensions
+import cryptography.hazmat.primitives.serialization.pkcs7 as pkcs7
 import requests
 
 from .warnings import SelfSignCertificateWarning, NotValidYetWarning, NearExpirationWarning, NotTrustedWarning
@@ -100,7 +101,7 @@ def verify_certificate(
 
 def get_issuer_certificate(
     subject: cryptography.x509.Certificate
-) -> cryptography.x509.Certificate:
+) -> typing.Dict[str, cryptography.x509.Certificate]:
     """
         Tries to fetch the certificate listed in the certificate extension
         "Authority Information Access"
@@ -114,30 +115,47 @@ def get_issuer_certificate(
             f'Unable to find the link for CA certificate '
             f'"{subject.issuer.rfc4514_string()}"'
         )
-    issuer_cert = None
+    issuer_certs: typing.List[cryptography.x509.Certificate] = []
     for issuer_link in issuer_aia:
         if issuer_link.access_method.dotted_string == "1.3.6.1.5.5.7.48.2":
             # The link to Issuer's Certificate
             # https://oidref.com/1.3.6.1.5.5.7.48.2
-            cert_response = requests.get(issuer_link.access_location.value)
-            try:
-                issuer_cert = cryptography.x509.load_pem_x509_certificate(
-                    cert_response.content
-                )
-                break
-            except ValueError:
-                issuer_cert = cryptography.x509.load_der_x509_certificate(
-                    cert_response.content
-                )
-                break
-    if issuer_cert is None:
+            issuer_cert_url: str = issuer_link.access_location.value
+            cert_response = requests.get(issuer_cert_url)
+            if issuer_cert_url.endswith("p7b"):
+                # Expect PKCS7 format
+                try:
+                    issuer_certs = [
+                        *issuer_certs,
+                        *pkcs7.load_pem_pkcs7_certificates(cert_response.content)
+                    ]
+                except ValueError:
+                    issuer_certs = [
+                        *issuer_certs,
+                        *pkcs7.load_der_pkcs7_certificates(cert_response.content)
+                    ]
+            else:
+                try:
+                    issuer_certs.append(cryptography.x509.load_pem_x509_certificate(
+                        cert_response.content
+                    ))
+                    break
+                except ValueError:
+                    issuer_certs.append(cryptography.x509.load_der_x509_certificate(
+                        cert_response.content
+                    ))
+                    break
+    if not issuer_certs:
         raise RuntimeError(
             f'Unable to retrieve CA certificate for'
             f'"{subject.issuer.rfc4514_string()}" from'
             f'{issuer_link.access_location.value}'
         )
 
-    return issuer_cert
+    return {
+        cert.subject.rfc4514_string(): cert
+        for cert in issuer_certs
+    }
 
 
 def solve_cert_chain(
@@ -174,8 +192,15 @@ def solve_cert_chain(
             issuer_cert = known_certificate[issuer]
             final = True
         elif issuer != cursor.subject.rfc4514_string():
-            issuer_cert = get_issuer_certificate(cursor)
-            known_certificate[issuer] = issuer_cert
+            # An unknown issuer, trying to fetch certificate from AIA info
+            known_certificate = {
+                **known_certificate,
+                **get_issuer_certificate(cursor)
+            }
+            if issuer in known_certificate:
+                issuer_cert = known_certificate[issuer]
+            else:
+                raise ValueError(f'Unknown issuer "{issuer}"')
         else:
             # Self sign certificate, could be Root CA
             issuer_cert = cursor

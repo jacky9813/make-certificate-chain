@@ -32,8 +32,8 @@ System Requirements
 Supported Certificate Formats / Encodings
 =========================================
 
-- X.509 in PEM encoding
-- X.509 in DER encoding
+- X.509 in PEM or DER encoding
+- PKCS7 certificates bundle in PEM or DER encoding
 
 
 Install
@@ -41,7 +41,7 @@ Install
 
 .. code-block:: shell
 
-    pip install https://github.com/jacky9813/make-certificate-chain
+    pip install git+https://github.com/jacky9813/make-certificate-chain
 
 
 Usage
