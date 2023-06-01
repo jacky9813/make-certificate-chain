@@ -69,3 +69,10 @@ Example 3: Export with Root CA's certificate
 
     mkcertchain --include-root-ca example.cert.pem
 
+Example 4: Python module
+------------------------
+
+.. code-block:: shell
+
+    python3 -m make_certificate_chain --help
+
