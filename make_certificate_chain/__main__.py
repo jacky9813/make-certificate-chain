@@ -12,15 +12,6 @@ from .solver import solve_cert_chain
 from . import VERSION
 from . import utils
 
-SUPPORTED_FORMATS: typing.Dict[
-    str,
-    typing.Callable[[bytes], typing.List[cryptography.x509.Certificate]]
-] = {
-    "x509": utils.read_x509_certificate,
-    "pkcs7": utils.read_pkcs7_certificates,
-    "pkcs12": utils.read_pkcs12_certificates
-}
-
 
 def main():
     warnings.simplefilter("always")
@@ -44,7 +35,7 @@ def main():
     )
     parser.add_argument(
         "--in-type",
-        choices=[cert_format for cert_format in SUPPORTED_FORMATS.keys()],
+        choices=[cert_format for cert_format in utils.SUPPORTED_FORMATS.keys()],
         default="x509",
         help="The file type for the input file. (Default: x509)"
     )
@@ -65,7 +56,7 @@ def main():
     if args.server_cert != sys.stdin.buffer:
         args.server_cert.close()
     
-    server_cert = SUPPORTED_FORMATS[args.in_type](server_cert_src)[0]
+    server_cert = utils.SUPPORTED_FORMATS[args.in_type](server_cert_src)[0]
 
     if args.expire_warning < 0:
         warnings.warn("Received a negative value in --expire-warning.")
