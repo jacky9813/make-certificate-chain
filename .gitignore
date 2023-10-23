@@ -1,6 +1,7 @@
 __pycache__
 .venv
 *.pem
+*.der
 *.crt
 *.key
 .vscode
