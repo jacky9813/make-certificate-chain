@@ -14,12 +14,14 @@ from cryptography.hazmat.primitives.serialization import pkcs12
 CERTIFICATE_BEGIN = "-----BEGIN CERTIFICATE-----"
 PKCS7_BEGIN = "-----BEGIN PKCS7-----"
 
+CertificateList = typing.Dict[str, typing.List[x509.Certificate]]
 
-def read_x509_certificate(
+
+def read_x509_certificates(
     raw_data: bytes
 ) -> typing.List[x509.Certificate]:
     if CERTIFICATE_BEGIN.encode() in raw_data:
-        return [x509.load_pem_x509_certificate(raw_data)]
+        return x509.load_pem_x509_certificates(raw_data)
     return [x509.load_der_x509_certificate(raw_data)]
 
 
@@ -52,7 +54,7 @@ SUPPORTED_FORMATS: typing.Dict[
     str,
     typing.Callable[[bytes], typing.List[x509.Certificate]]
 ] = {
-    "x509": read_x509_certificate,
+    "x509": read_x509_certificates,
     "pkcs7": read_pkcs7_certificates,
     "pkcs12": read_pkcs12_certificates
 }
@@ -66,7 +68,7 @@ def read_certificate_file(path: str, cert_fmt: str = "x509") -> typing.List[x509
 
 def get_system_ca(
     path = None
-) -> typing.Dict[str, typing.List[x509.Certificate]]:
+) -> CertificateList:
     """
         Get the certificates from the system's CA list.
     """

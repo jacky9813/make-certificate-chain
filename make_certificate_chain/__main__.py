@@ -4,9 +4,8 @@ import argcomplete
 import datetime
 import sys
 import warnings
-import typing
 
-import cryptography.x509
+from cryptography.hazmat.primitives.serialization import Encoding
 
 from .solver import solve_cert_chain
 from . import VERSION
@@ -74,16 +73,31 @@ def main():
     for cert in chain:
         if cert in outputed_certs:
             continue
-        print("Subject:   ", cert.subject.rfc4514_string(), file=sys.stderr)
-        print("Issuer:    ", cert.issuer.rfc4514_string(), file=sys.stderr)
-        print("Not Before:", cert.not_valid_before.strftime("%Y-%m-%dT%H:%M:%SZ"), file=sys.stderr)
-        print("Not After: ", cert.not_valid_after.strftime("%Y-%m-%dT%H:%M:%SZ"), file=sys.stderr)
-        print("=" * 10, file=sys.stderr)
         print(
-            cert.public_bytes(
-                encoding=cryptography.hazmat.primitives.serialization.Encoding.PEM
-            ).decode().strip()
+            "Subject:   ",
+            cert.subject.rfc4514_string(),
+            file=sys.stderr
         )
+        print(
+            "Issuer:    ",
+            cert.issuer.rfc4514_string(),
+            file=sys.stderr
+        )
+        print(
+            "Not Before:",
+            cert.not_valid_before.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            file=sys.stderr
+        )
+        print(
+            "Not After: ",
+            cert.not_valid_after.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            file=sys.stderr
+        )
+        print(
+            "=" * 10,
+            file=sys.stderr
+        )
+        print(cert.public_bytes(encoding=Encoding.PEM).decode().strip())
         outputed_certs.append(cert)
 
 if __name__ == "__main__":

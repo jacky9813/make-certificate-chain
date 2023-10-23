@@ -5,13 +5,12 @@ import importlib.metadata
 
 from cryptography import x509
 from cryptography.x509 import extensions as x509_extensions
-from cryptography.hazmat.primitives.serialization import pkcs7
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 import requests
 
 from .warnings import SelfSignCertificateWarning, NotValidYetWarning, NearExpirationWarning, NotTrustedWarning
 from .exceptions import CertificateExpiredError, NoIssuerCertificateError
-from .utils import get_system_ca, CERTIFICATE_BEGIN
+from . import utils
 
 
 CRYPTOGRAPHY_VERSION = int(importlib.metadata.distribution("cryptography").version.split('.')[0])
@@ -72,7 +71,7 @@ def verify_certificate(
 
 def get_issuer_certificate(
     subject: x509.Certificate
-) -> typing.Dict[str, typing.List[x509.Certificate]]:
+) -> utils.CertificateList:
     """
         Tries to fetch the certificate listed in the certificate extension
         "Authority Information Access"
@@ -92,30 +91,16 @@ def get_issuer_certificate(
             # The link to Issuer's Certificate
             # https://oidref.com/1.3.6.1.5.5.7.48.2
             issuer_cert_url: str = issuer_link.access_location.value
-            cert_response = requests.get(issuer_cert_url)
+            cert_response: requests.Response = requests.get(issuer_cert_url)
             if issuer_cert_url.endswith("p7b"):
                 # Expect PKCS7 format
-                try:
-                    issuer_certs = [
-                        *issuer_certs,
-                        *pkcs7.load_pem_pkcs7_certificates(cert_response.content)
-                    ]
-                except ValueError:
-                    issuer_certs = [
-                        *issuer_certs,
-                        *pkcs7.load_der_pkcs7_certificates(cert_response.content)
-                    ]
+                issuer_certs.extend(
+                    utils.read_pkcs7_certificates(cert_response.content)
+                )
             else:
-                try:
-                    issuer_certs.append(x509.load_pem_x509_certificate(
-                        cert_response.content
-                    ))
-                    break
-                except ValueError:
-                    issuer_certs.append(x509.load_der_x509_certificate(
-                        cert_response.content
-                    ))
-                    break
+                issuer_certs.extend(
+                    utils.read_x509_certificates(cert_response.content)
+                )
     if not issuer_certs:
         raise RuntimeError(
             f'Unable to retrieve CA certificate for'
@@ -123,7 +108,7 @@ def get_issuer_certificate(
             f'{issuer_link.access_location.value}'
         )
 
-    cert_output: typing.Dict[str, typing.List[x509.Certificate]] = {}
+    cert_output: utils.CertificateList = {}
     for cert in issuer_certs:
         cert_subject = cert.subject.rfc4514_string()
         if cert_subject not in cert_output:
@@ -135,11 +120,11 @@ def get_issuer_certificate(
 
 def solve_cert_chain(
     current_cert: x509.Certificate,
-    ca_certificates: typing.Optional[typing.Dict[str, typing.List[x509.Certificate]]] = None,
+    ca_certificates: typing.Optional[utils.CertificateList] = None,
     expire_warning: typing.Optional[datetime.timedelta] = None,
     include_root_ca: bool = False,
     ignore_self_sign_warning: bool = False,
-    known_certificates: typing.Optional[typing.Dict[str, typing.List[x509.Certificate]]] = None
+    known_certificates: typing.Optional[utils.CertificateList] = None
 ) -> typing.Generator[x509.Certificate, None, None]:
     """
         Return a list that contains the certificate chain, with server certificate
@@ -162,7 +147,7 @@ def solve_cert_chain(
         return
 
     if ca_certificates is None:
-        ca_certificates = get_system_ca()
+        ca_certificates = utils.get_system_ca()
 
     if known_certificates is None:
         known_certificates = dict()
@@ -194,7 +179,7 @@ def solve_cert_chain(
             issuer_is_root_ca = True
             warnings.warn(
                 "Root CA is unknown to this system",
-                SelfSignCertificateWarning
+                NotTrustedWarning
             )
         
         if issuer_is_root_ca and not include_root_ca:

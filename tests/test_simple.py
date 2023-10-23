@@ -5,7 +5,7 @@ from make_certificate_chain import utils
 
 
 def test_simple(example_com_cert: bytes):
-    cert = utils.read_x509_certificate(example_com_cert)
+    cert = utils.read_x509_certificates(example_com_cert)
     chain = list(solver.solve_cert_chain(cert[0], include_root_ca=True))
     assert len(chain) > 0
     sans = [
