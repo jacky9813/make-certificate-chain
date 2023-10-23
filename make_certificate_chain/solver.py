@@ -3,9 +3,10 @@ import datetime
 import warnings
 import importlib.metadata
 
-import cryptography.x509
-import cryptography.x509.extensions
-import cryptography.hazmat.primitives.serialization.pkcs7 as pkcs7
+from cryptography import x509
+from cryptography.x509 import extensions as x509_extensions
+from cryptography.hazmat.primitives.serialization import pkcs7
+from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 import requests
 
 from .warnings import SelfSignCertificateWarning, NotValidYetWarning, NearExpirationWarning, NotTrustedWarning
@@ -18,8 +19,8 @@ USE_TIMEZONE_AWARE_DATETIME = CRYPTOGRAPHY_VERSION >= 42
 
 
 def verify_certificate(
-    subject: cryptography.x509.Certificate,
-    issuer: cryptography.x509.Certificate,
+    subject: x509.Certificate,
+    issuer: x509.Certificate,
     expire_warning: typing.Optional[datetime.timedelta] = None
 ) -> None:
     """
@@ -64,28 +65,28 @@ def verify_certificate(
     issuer.public_key().verify(
         subject.signature,
         subject.tbs_certificate_bytes,
-        cryptography.hazmat.primitives.asymmetric.padding.PKCS1v15(),
+        PKCS1v15(),
         subject.signature_hash_algorithm
     )
 
 
 def get_issuer_certificate(
-    subject: cryptography.x509.Certificate
-) -> typing.Dict[str, typing.List[cryptography.x509.Certificate]]:
+    subject: x509.Certificate
+) -> typing.Dict[str, typing.List[x509.Certificate]]:
     """
         Tries to fetch the certificate listed in the certificate extension
         "Authority Information Access"
     """
     try:
         issuer_aia = subject.extensions.get_extension_for_class(
-            cryptography.x509.AuthorityInformationAccess
+            x509.AuthorityInformationAccess
         ).value
-    except cryptography.x509.extensions.ExtensionNotFound:
+    except x509_extensions.ExtensionNotFound:
         raise NoIssuerCertificateError(
             f'Unable to find the link for CA certificate '
             f'"{subject.issuer.rfc4514_string()}"'
         )
-    issuer_certs: typing.List[cryptography.x509.Certificate] = []
+    issuer_certs: typing.List[x509.Certificate] = []
     for issuer_link in issuer_aia:
         if issuer_link.access_method.dotted_string == "1.3.6.1.5.5.7.48.2":
             # The link to Issuer's Certificate
@@ -106,12 +107,12 @@ def get_issuer_certificate(
                     ]
             else:
                 try:
-                    issuer_certs.append(cryptography.x509.load_pem_x509_certificate(
+                    issuer_certs.append(x509.load_pem_x509_certificate(
                         cert_response.content
                     ))
                     break
                 except ValueError:
-                    issuer_certs.append(cryptography.x509.load_der_x509_certificate(
+                    issuer_certs.append(x509.load_der_x509_certificate(
                         cert_response.content
                     ))
                     break
@@ -122,7 +123,7 @@ def get_issuer_certificate(
             f'{issuer_link.access_location.value}'
         )
 
-    cert_output: typing.Dict[str, typing.List[cryptography.x509.Certificate]] = {}
+    cert_output: typing.Dict[str, typing.List[x509.Certificate]] = {}
     for cert in issuer_certs:
         cert_subject = cert.subject.rfc4514_string()
         if cert_subject not in cert_output:
@@ -133,12 +134,13 @@ def get_issuer_certificate(
 
 
 def solve_cert_chain(
-    current_cert: cryptography.x509.Certificate,
-    ca_certificates: typing.Optional[typing.Dict[str, typing.List[cryptography.x509.Certificate]]] = None,
+    current_cert: x509.Certificate,
+    ca_certificates: typing.Optional[typing.Dict[str, typing.List[x509.Certificate]]] = None,
     expire_warning: typing.Optional[datetime.timedelta] = None,
     include_root_ca: bool = False,
-    ignore_self_sign_warning: bool = False
-) -> typing.Generator[cryptography.x509.Certificate, None, None]:
+    ignore_self_sign_warning: bool = False,
+    known_certificates: typing.Optional[typing.Dict[str, typing.List[x509.Certificate]]] = None
+) -> typing.Generator[x509.Certificate, None, None]:
     """
         Return a list that contains the certificate chain, with server certificate
         being the first element.
@@ -158,33 +160,52 @@ def solve_cert_chain(
                 SelfSignCertificateWarning
             )
         return
+
     if ca_certificates is None:
         ca_certificates = get_system_ca()
+
+    if known_certificates is None:
+        known_certificates = dict()
     
     issuer_name = current_cert.issuer.rfc4514_string()
     issuer_is_root_ca = False
+    issuer_already_known = False
 
-    if issuer_name in ca_certificates and not include_root_ca:
+    if issuer_name in known_certificates:
+        issuer_certs = known_certificates[issuer_name]
+        issuer_already_known = True
+    elif issuer_name in ca_certificates:
         issuer_certs = ca_certificates[issuer_name]
         issuer_is_root_ca = True
     else:
         issuer_certs = get_issuer_certificate(current_cert).get(issuer_name, [])
+        known_certificates[issuer_name] = issuer_certs
     
     if not issuer_certs:
         raise NoIssuerCertificateError()
-    
+
     for issuer_cert in issuer_certs:
         verify_certificate(current_cert, issuer_cert, expire_warning)
 
-    if issuer_is_root_ca and not include_root_ca:
-        return
-    
-    for issuer_cert in issuer_certs:
+        if issuer_already_known:
+            continue
+
+        if issuer_cert.subject == issuer_cert.issuer and not issuer_is_root_ca:
+            issuer_is_root_ca = True
+            warnings.warn(
+                "Root CA is unknown to this system",
+                SelfSignCertificateWarning
+            )
+        
+        if issuer_is_root_ca and not include_root_ca:
+            continue
+
         for issuer_issuer_cert in solve_cert_chain(
             issuer_cert,
             ca_certificates,
             expire_warning,
             include_root_ca,
-            issuer_is_root_ca or ignore_self_sign_warning
+            issuer_is_root_ca or ignore_self_sign_warning,
+            known_certificates
         ):
             yield issuer_issuer_cert
