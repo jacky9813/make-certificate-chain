@@ -1,16 +1,20 @@
 name: Feature test
 on:
-  - push
+  push:
+    paths-ignore:
+      - .gitignore
+      - LICENSE
+      - README.rst
 jobs:
   test:
     strategy:
       matrix:
         python-version:
-          - "3.7"
           - "3.8"
           - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12"
         os:
           - ubuntu-latest
           - windows-latest
