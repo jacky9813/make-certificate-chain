@@ -19,7 +19,7 @@ SYSTEM_CA_FILE = [
 
 def get_system_ca(
     path = None
-) -> typing.Dict[str, cryptography.x509.Certificate]:
+) -> typing.Dict[str, typing.List[cryptography.x509.Certificate]]:
     """
         Get the certificates from the system's CA list.
     """
@@ -44,10 +44,14 @@ def get_system_ca(
                 if c.strip() != ""
             ]
         ]
-    return {
-        ca_cert.issuer.rfc4514_string(): ca_cert
-        for ca_cert in ca_list
-    }
+    output: typing.Dict[str, typing.List[cryptography.x509.Certificate]] = {}
+    for ca_cert in ca_list:
+        ca_subject = ca_cert.subject.rfc4514_string()
+        if ca_subject not in output:
+            output[ca_subject] = list()
+        output[ca_subject].append(ca_cert)
+
+    return output
 
 
 def read_x509_certificate(

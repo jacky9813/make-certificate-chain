@@ -59,7 +59,7 @@ def verify_certificate(
 
 def get_issuer_certificate(
     subject: cryptography.x509.Certificate
-) -> typing.Dict[str, cryptography.x509.Certificate]:
+) -> typing.Dict[str, typing.List[cryptography.x509.Certificate]]:
     """
         Tries to fetch the certificate listed in the certificate extension
         "Authority Information Access"
@@ -110,68 +110,69 @@ def get_issuer_certificate(
             f'{issuer_link.access_location.value}'
         )
 
-    return {
-        cert.subject.rfc4514_string(): cert
-        for cert in issuer_certs
-    }
+    cert_output: typing.Dict[str, typing.List[cryptography.x509.Certificate]] = {}
+    for cert in issuer_certs:
+        cert_subject = cert.subject.rfc4514_string()
+        if cert_subject not in cert_output:
+            cert_output[cert_subject] = list()
+        cert_output[cert_subject].append(cert)
+    
+    return cert_output
 
 
 def solve_cert_chain(
-    server_cert: cryptography.x509.Certificate,
-    known_certificate: typing.Optional[typing.Dict[str, cryptography.x509.Certificate]] = None,
+    current_cert: cryptography.x509.Certificate,
+    ca_certificates: typing.Optional[typing.Dict[str, typing.List[cryptography.x509.Certificate]]] = None,
     expire_warning: typing.Optional[datetime.timedelta] = None,
-    include_root_ca: bool = False
-) -> typing.Iterable[cryptography.x509.Certificate]:
+    include_root_ca: bool = False,
+    ignore_self_sign_warning: bool = False
+) -> typing.Generator[cryptography.x509.Certificate, None, None]:
     """
         Return a list that contains the certificate chain, with server certificate
         being the first element.
 
-        The root CA's certificate will not be included.
+        The root CA's certificate will not be included unless include_root_ca is True.
     """
-    if server_cert.issuer == server_cert.subject:
+    yield current_cert
+    if current_cert.issuer == current_cert.subject:
         verify_certificate(
-            server_cert,
-            server_cert,
+            current_cert,
+            current_cert,
             expire_warning
         )
-        warnings.warn(
-            "It is a self signed certificate.",
-            SelfSignCertificateWarning
-        )
-        return [server_cert]
-    if known_certificate is None:
-        known_certificate = get_system_ca()
-    chain = [server_cert]
-    cursor: cryptography.x509.Certificate = server_cert
-    while True:
-        final = False
-        issuer = cursor.issuer.rfc4514_string()
-        if issuer in known_certificate:
-            issuer_cert = known_certificate[issuer]
-            final = True
-        elif issuer != cursor.subject.rfc4514_string():
-            # An unknown issuer, trying to fetch certificate from AIA info
-            known_certificate = {
-                **known_certificate,
-                **get_issuer_certificate(cursor)
-            }
-            if issuer in known_certificate:
-                issuer_cert = known_certificate[issuer]
-            else:
-                raise ValueError(f'Unknown issuer "{issuer}"')
-        else:
-            # Self sign certificate, could be Root CA
-            issuer_cert = cursor
-            final = True
+        if not ignore_self_sign_warning:
             warnings.warn(
-                "Resolved to an untrusted CA",
-                NotTrustedWarning
+                "It is a self signed certificate.",
+                SelfSignCertificateWarning
             )
-        verify_certificate(cursor, issuer_cert, expire_warning)
-        if final:
-            if include_root_ca:
-                chain.append(issuer_cert)
-            break
-        chain.append(issuer_cert)
-        cursor = issuer_cert
-    return chain
+        return
+    if ca_certificates is None:
+        ca_certificates = get_system_ca()
+    
+    issuer_name = current_cert.issuer.rfc4514_string()
+    issuer_is_root_ca = False
+
+    if issuer_name in ca_certificates and not include_root_ca:
+        issuer_certs = ca_certificates[issuer_name]
+        issuer_is_root_ca = True
+    else:
+        issuer_certs = get_issuer_certificate(current_cert).get(issuer_name, [])
+    
+    if not issuer_certs:
+        raise NoIssuerCertificateError()
+    
+    for issuer_cert in issuer_certs:
+        verify_certificate(current_cert, issuer_cert, expire_warning)
+
+    if issuer_is_root_ca and not include_root_ca:
+        return
+    
+    for issuer_cert in issuer_certs:
+        for issuer_issuer_cert in solve_cert_chain(
+            issuer_cert,
+            ca_certificates,
+            expire_warning,
+            include_root_ca,
+            issuer_is_root_ca or ignore_self_sign_warning
+        ):
+            yield issuer_issuer_cert

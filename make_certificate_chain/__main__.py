@@ -77,8 +77,12 @@ def main():
         args.include_root_ca
     )
 
+    outputed_certs = []
+
     print("=" * 10, file=sys.stderr)
     for cert in chain:
+        if cert in outputed_certs:
+            continue
         print("Subject:   ", cert.subject.rfc4514_string(), file=sys.stderr)
         print("Issuer:    ", cert.issuer.rfc4514_string(), file=sys.stderr)
         print("Not Before:", cert.not_valid_before.strftime("%Y-%m-%dT%H:%M:%SZ"), file=sys.stderr)
@@ -89,6 +93,7 @@ def main():
                 encoding=cryptography.hazmat.primitives.serialization.Encoding.PEM
             ).decode().strip()
         )
+        outputed_certs.append(cert)
 
 if __name__ == "__main__":
     main()
