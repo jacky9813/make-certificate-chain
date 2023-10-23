@@ -185,12 +185,11 @@ def solve_cert_chain(
         if issuer_is_root_ca and not include_root_ca:
             continue
 
-        for issuer_issuer_cert in solve_cert_chain(
+        yield from solve_cert_chain(
             issuer_cert,
             ca_certificates,
             expire_warning,
             include_root_ca,
             issuer_is_root_ca or ignore_self_sign_warning,
             known_certificates
-        ):
-            yield issuer_issuer_cert
+        )
