@@ -1,6 +1,7 @@
 import typing
 import datetime
 import warnings
+import importlib.metadata
 
 import cryptography.x509
 import cryptography.x509.extensions
@@ -10,6 +11,10 @@ import requests
 from .warnings import SelfSignCertificateWarning, NotValidYetWarning, NearExpirationWarning, NotTrustedWarning
 from .exceptions import CertificateExpiredError, NoIssuerCertificateError
 from .utils import get_system_ca, CERTIFICATE_BEGIN
+
+
+CRYPTOGRAPHY_VERSION = int(importlib.metadata.distribution("cryptography").version.split('.')[0])
+USE_TIMEZONE_AWARE_DATETIME = CRYPTOGRAPHY_VERSION >= 42
 
 
 def verify_certificate(
@@ -24,23 +29,30 @@ def verify_certificate(
         * Issuer's distinguished name.
         * Issuer's public key (signature check).
     """
-    current_time = datetime.datetime.utcnow()
+    if USE_TIMEZONE_AWARE_DATETIME:
+        current_time = datetime.datetime.now(datetime.timezone.utc)
+        not_valid_before = subject.not_valid_before_utc
+        not_valid_after = subject.not_valid_after_utc
+    else:
+        current_time = datetime.datetime.utcnow()
+        not_valid_before = subject.not_valid_before
+        not_valid_after = subject.not_valid_after
     if current_time < subject.not_valid_before:
         warnings.warn(
             f'The certificate is valid after '
-            f'{subject.not_valid_before.strftime("%Y-%m-%dT%H:%M:%SZ")}',
+            f'{not_valid_before.strftime("%Y-%m-%dT%H:%M:%SZ")}',
             NotValidYetWarning
         )
-    if current_time > subject.not_valid_after:
+    if current_time > not_valid_after:
         raise CertificateExpiredError(
             f'The certificate for {subject.subject.rfc4514_string()} is '
-            f'expired at {subject.not_valid_after.strftime("%Y-%m-%dT%H:%M:%SZ")}'
+            f'expired at {not_valid_after.strftime("%Y-%m-%dT%H:%M:%SZ")}'
         )
     if expire_warning is not None and \
-        (current_time + expire_warning) > subject.not_valid_after:
+        (current_time + expire_warning) > not_valid_after:
         warnings.warn(
             f'The certificate is about to expire. '
-            f'Expiration date: {subject.not_valid_after.strftime("%Y-%m-%dT%H:%M:%SZ")}',
+            f'Expiration date: {not_valid_after.strftime("%Y-%m-%dT%H:%M:%SZ")}',
             NearExpirationWarning
         )
     if subject.issuer.rfc4514_string() != issuer.subject.rfc4514_string():
