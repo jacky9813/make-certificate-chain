@@ -4,11 +4,22 @@ import argcomplete
 import datetime
 import sys
 import warnings
+import typing
 
 import cryptography.x509
 
-from .solver import solve_cert_chain, CERTIFICATE_BEGIN
+from .solver import solve_cert_chain
 from . import VERSION
+from . import utils
+
+SUPPORTED_FORMATS: typing.Dict[
+    str,
+    typing.Callable[[bytes], typing.List[cryptography.x509.Certificate]]
+] = {
+    "x509": utils.read_x509_certificate,
+    "pkcs7": utils.read_pkcs7_certificates,
+    "pkcs12": utils.read_pkcs12_certificates
+}
 
 
 def main():
@@ -32,6 +43,12 @@ def main():
         help="Output Root CA's certificate as well."
     )
     parser.add_argument(
+        "--in-type",
+        choices=[cert_format for cert_format in SUPPORTED_FORMATS.keys()],
+        default="x509",
+        help="The file type for the input file. (Default: x509)"
+    )
+    parser.add_argument(
         "server_cert",
         nargs="?",
         type=argparse.FileType(mode="rb"),
@@ -47,16 +64,8 @@ def main():
     server_cert_src = args.server_cert.read()
     if args.server_cert != sys.stdin.buffer:
         args.server_cert.close()
-    server_cert_is_pem = False
-    try:
-        if CERTIFICATE_BEGIN in server_cert_src.decode():
-            server_cert_is_pem = True
-    except UnicodeDecodeError:
-        pass
-    if server_cert_is_pem:
-        server_cert = cryptography.x509.load_pem_x509_certificate(server_cert_src)
-    else:
-        server_cert = cryptography.x509.load_der_x509_certificate(server_cert_src)
+    
+    server_cert = SUPPORTED_FORMATS[args.in_type](server_cert_src)[0]
 
     if args.expire_warning < 0:
         warnings.warn("Received a negative value in --expire-warning.")

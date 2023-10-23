@@ -5,6 +5,9 @@ from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.serialization import pkcs7
+from cryptography.hazmat.primitives.serialization import pkcs12
+from cryptography.hazmat.primitives.serialization import BestAvailableEncryption, Encoding
 import pytest
 
 
@@ -78,14 +81,29 @@ def cert_with_unknown_ca() -> x509.Certificate:
 
 
 @pytest.fixture
-def example_com_cert() -> x509.Certificate:
+def example_com_cert() -> bytes:
     # Testing X509 certificate
     cert = ssl.get_server_certificate(("www.example.com", 443))
-    return x509.load_pem_x509_certificate(cert.encode())
+    return cert.encode()
 
 
-@pytest.fixture()
-def epki_com_tw_cert() -> x509.Certificate:
+@pytest.fixture
+def example_com_cert_pkcs12() -> bytes:
+    cert = ssl.get_server_certificate(("www.example.com", 443))
+    return pkcs12.serialize_key_and_certificates(
+        name=None,
+        key=None,
+        cert=x509.load_pem_x509_certificate(cert.encode()),
+        cas=None,
+        encryption_algorithm=BestAvailableEncryption(b'12345678')
+    )
+
+
+@pytest.fixture
+def epki_com_tw_cert() -> bytes:
     # Testing PKCS7 certificates
     cert = ssl.get_server_certificate(("epki.com.tw", 443))
-    return x509.load_pem_x509_certificate(cert.encode())
+    return pkcs7.serialize_certificates(
+        [x509.load_pem_x509_certificate(cert.encode())],
+        encoding=Encoding.PEM
+    )

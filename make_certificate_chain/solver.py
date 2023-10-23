@@ -1,9 +1,6 @@
 import typing
 import datetime
 import warnings
-import os
-import ssl
-import sys
 
 import cryptography.x509
 import cryptography.x509.extensions
@@ -12,46 +9,7 @@ import requests
 
 from .warnings import SelfSignCertificateWarning, NotValidYetWarning, NearExpirationWarning, NotTrustedWarning
 from .exceptions import CertificateExpiredError, NoIssuerCertificateError
-
-
-CERTIFICATE_BEGIN = "-----BEGIN CERTIFICATE-----"
-
-SYSTEM_CA_FILE = [
-    "/etc/ssl/certs/ca-certificates.crt",   # Debian, Alpine
-    "/etc/ssl/certs/ca-bundle.crt"          # RHEL
-]
-
-def get_system_ca(
-    path = None
-) -> typing.Dict[str, cryptography.x509.Certificate]:
-    """
-        Get the certificates from the system's CA list.
-    """
-    if sys.platform == "win32":
-        ca_list = [
-            cryptography.x509.load_der_x509_certificate(ca_info[0])
-            for ca_info in ssl.enum_certificates("root")
-        ]
-    else:
-        if path is None:
-            for p in SYSTEM_CA_FILE:
-                if os.path.exists(p):
-                    path = p
-                    break
-        with open(path, mode="r", encoding="utf-8") as ca_fd:
-            ca = ca_fd.read()
-        ca_list = [
-            cryptography.x509.load_pem_x509_certificate(cert_pem)
-            for cert_pem in [
-                (CERTIFICATE_BEGIN + c).encode()
-                for c in ca.split(CERTIFICATE_BEGIN)
-                if c.strip() != ""
-            ]
-        ]
-    return {
-        ca_cert.issuer.rfc4514_string(): ca_cert
-        for ca_cert in ca_list
-    }
+from .utils import get_system_ca, CERTIFICATE_BEGIN
 
 
 def verify_certificate(
