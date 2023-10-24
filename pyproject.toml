@@ -28,7 +28,12 @@ dynamic = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.2.1", "coverage>=7.2.1"]
+dev = [
+    "pytest>=7.2.1",
+    "coverage>=7.2.1",
+    "semgrep>=1.45.0",
+    "pip_audit>=2.6.1"
+]
 
 [project.scripts]
 mkcertchain = "make_certificate_chain.__main__:main"
