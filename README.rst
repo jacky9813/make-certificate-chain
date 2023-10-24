@@ -4,11 +4,11 @@ Make Certificate Chain
 
 .. image:: https://github.com/jacky9813/make-certificate-chain/actions/workflows/test.yml/badge.svg
 
-This program helps system administrators to configure a Web Service that
-provides full SSL/TLS chain when handshaking.
+This program helps system administrators to configure a Web Service that provides full SSL/TLS 
+chain when handshaking.
 
-With server provides all the certificates needed, it is possible to gain
-a little performance benefit for client verifying the server certificate.
+With server provides all the certificates needed, it is possible to gain a little performance 
+benefit for client verifying the server certificate.
 
 .. note:: 
     This program leverages on the existence of CAIssuers field 
@@ -47,22 +47,23 @@ Supported Certificate Formats / Encodings
 Supported Importing Destinations
 ================================
 
-.. _Global/Regional SSL Certificates: https://cloud.google.com/load-balancing/docs/ssl-certificates/self-managed-certs
 .. _AWS Certificate Manager: https://docs.aws.amazon.com/acm/latest/userguide/import-certificate-api-cli.html
+.. _Global/Regional SSL Certificates: https://cloud.google.com/load-balancing/docs/ssl-certificates/self-managed-certs
 
-- Google Cloud - `Global/Regional SSL Certificates`_
 - AWS - `AWS Certificate Manager`_ (ACM)
+- Google Cloud - `Global/Regional SSL Certificates`_
 
 
 System Requirements
 ===================
 
-.. _Google Cloud CLI: https://cloud.google.com/sdk/docs/install
 .. _AWS CLI: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+.. _Google Cloud CLI: https://cloud.google.com/sdk/docs/install
 
 - Python 3.8 or later
-- `Google Cloud CLI`_ for import certificate to Google Cloud
-- `AWS CLI`_ for import certificate to AWS Certificate Manager (ACM)
+- For import certificate to cloud services:
+    - `AWS CLI`_ for import certificate to AWS Certificate Manager (ACM)
+    - `Google Cloud CLI`_ for import certificate to Google Cloud
 
 
 Install & Upgrade
@@ -78,8 +79,8 @@ Usage
 
 .. note::
 
-    Unlike OpenSSL, this program detects the format automatically, so you
-    don't have to put ``-inform`` equivalent parameter.
+    Unlike OpenSSL, this program detects the format automatically, so you don't have to put
+    ``-inform`` equivalent parameter.
 
 Example 1: Simple usage
 -----------------------
