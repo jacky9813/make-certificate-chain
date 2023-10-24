@@ -66,7 +66,11 @@ def gcp(
     description: str,
     region: str
 ):
-    "Upload certificate chain to Google Cloud"
+    """
+        Upload certificate chain to Google Cloud.
+
+        Resource self-link will be shown in stdout after import.
+    """
     cert_raw = certificate_in.read()
     key_raw = None
     if key_in and key_in[0] != sys.stdin.buffer:
@@ -121,3 +125,4 @@ def gcp(
     )
 
     logger.info("%s created", ssl_cert_object.self_link)
+    print(ssl_cert_object.self_link)

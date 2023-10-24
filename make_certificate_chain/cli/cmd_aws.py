@@ -65,7 +65,11 @@ def aws(
     profile: typing.Optional[str],
     region: typing.Optional[str]
 ):
-    "Upload certificate chain to AWS Certificate Manager (ACM)"
+    """
+        Upload certificate chain to AWS Certificate Manager (ACM).
+
+        Certificate ARN will be shown in stdout after import/reimport.
+    """
     
     cert_raw = certificate_in.read()
     key_raw = None
@@ -98,3 +102,5 @@ def aws(
         "Certificate imported into %s",
         response.get("CertificateArn", "UNKNOWN")
     )
+
+    print(response.get("CertificateArn", ""))
