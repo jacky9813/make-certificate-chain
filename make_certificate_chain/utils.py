@@ -9,6 +9,7 @@ import getpass
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import pkcs7
 from cryptography.hazmat.primitives.serialization import pkcs12
+from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 
 
 CERTIFICATE_BEGIN = "-----BEGIN CERTIFICATE-----"
@@ -18,7 +19,8 @@ CertificateList = typing.Dict[str, typing.List[x509.Certificate]]
 
 
 def read_x509_certificates(
-    raw_data: bytes
+    raw_data: bytes,
+    password: typing.Optional[bytes] = None
 ) -> typing.List[x509.Certificate]:
     if CERTIFICATE_BEGIN.encode() in raw_data:
         return x509.load_pem_x509_certificates(raw_data)
@@ -26,7 +28,8 @@ def read_x509_certificates(
 
 
 def read_pkcs7_certificates(
-    raw_data: bytes
+    raw_data: bytes,
+    password: typing.Optional[bytes] = None
 ) -> typing.List[x509.Certificate]:
     if PKCS7_BEGIN.encode() in raw_data:
         return pkcs7.load_pem_pkcs7_certificates(raw_data)
@@ -50,9 +53,9 @@ def read_pkcs12_certificates(
     ]
 
 
-SUPPORTED_FORMATS: typing.Dict[
+CERTIFICATE_FORMATS: typing.Dict[
     str,
-    typing.Callable[[bytes], typing.List[x509.Certificate]]
+    typing.Callable[[bytes, typing.Optional[bytes]], typing.List[x509.Certificate]]
 ] = {
     "x509": read_x509_certificates,
     "pkcs7": read_pkcs7_certificates,
@@ -60,9 +63,17 @@ SUPPORTED_FORMATS: typing.Dict[
 }
 
 
+def read_pkcs12_key(
+    pkcs12_raw: bytes,
+    password: typing.Optional[bytes] = None
+) -> typing.Optional[PrivateKeyTypes]:
+    parsed_p12 = pkcs12.load_pkcs12(pkcs12_raw,password)
+    return parsed_p12.key
+
+
 def read_certificate_file(path: str, cert_fmt: str = "x509") -> typing.List[x509.Certificate]:
     with open(path, mode="rb") as cert_fd:
-        certs = SUPPORTED_FORMATS[cert_fmt](cert_fd.read())
+        certs = CERTIFICATE_FORMATS[cert_fmt](cert_fd.read())
     return certs
 
 

@@ -18,7 +18,8 @@ classifiers = [
 dependencies = [
     "requests>=2.28.2",
     "argcomplete>=2.0.0",
-    "cryptography>=39.0.1"
+    "cryptography>=39.0.1",
+    "click>=8.1.7"
 ]
 dynamic = [
     "version"
