@@ -15,6 +15,17 @@ a little performance benefit for client verifying the server certificate.
     (OID: ``1.3.6.1.5.5.7.48.2``).
 
 
+Certificate Validation
+======================
+
+User shouldn't seen SSL handshake error due to invalid certificate. This program also validates
+all certificates in chain. These are the items being checked across all certificates in chain:
+
+- Signature
+- Issuer name and subject name in issuer's certficate.
+- Dates (Not Before, Not After)
+
+
 Supported Certificate Formats / Encodings
 =========================================
 
