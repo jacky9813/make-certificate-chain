@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Do not perform change to Google Cloud."
+    help="Do not perform change to AWS."
 )
 @click.option(
     "--profile",
