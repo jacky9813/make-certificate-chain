@@ -13,6 +13,20 @@ def test_simple(example_com_cert: bytes):
         for san in chain[0].extensions.get_extension_for_class(x509.SubjectAlternativeName).value
     ]
     assert "www.example.com" in sans
+    system_ca = utils.get_system_ca()
+    for index, cert in enumerate(chain):
+        if index >= (len(chain) - 1):
+            # certificate should be signed by CA
+            solver.verify_certificate(
+                cert,
+                system_ca[cert.issuer.rfc4514_string()][0]
+            )
+        else:
+            # certificate should be signed by next certificate
+            solver.verify_certificate(
+                cert,
+                chain[index + 1]
+            )
 
 
 def test_pkcs7(epki_com_tw_cert: bytes):
@@ -24,6 +38,20 @@ def test_pkcs7(epki_com_tw_cert: bytes):
         for san in chain[0].extensions.get_extension_for_class(x509.SubjectAlternativeName).value
     ]
     assert "epki.com.tw" in sans
+    system_ca = utils.get_system_ca()
+    for index, cert in enumerate(chain):
+        if index >= (len(chain) - 1):
+            # certificate should be signed by CA
+            solver.verify_certificate(
+                cert,
+                system_ca[cert.issuer.rfc4514_string()][0]
+            )
+        else:
+            # certificate should be signed by next certificate
+            solver.verify_certificate(
+                cert,
+                chain[index + 1]
+            )
 
 
 def test_pkcs12(example_com_cert_pkcs12: bytes):
@@ -38,3 +66,17 @@ def test_pkcs12(example_com_cert_pkcs12: bytes):
         for san in chain[0].extensions.get_extension_for_class(x509.SubjectAlternativeName).value
     ]
     assert "www.example.com" in sans
+    system_ca = utils.get_system_ca()
+    for index, cert in enumerate(chain):
+        if index >= (len(chain) - 1):
+            # certificate should be signed by CA
+            solver.verify_certificate(
+                cert,
+                system_ca[cert.issuer.rfc4514_string()][0]
+            )
+        else:
+            # certificate should be signed by next certificate
+            solver.verify_certificate(
+                cert,
+                chain[index + 1]
+            )

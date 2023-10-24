@@ -4,11 +4,15 @@ Make Certificate Chain
 
 .. image:: https://github.com/jacky9813/make-certificate-chain/actions/workflows/test.yml/badge.svg
 
+.. _TLS 1.2 Server Certificate: https://datatracker.ietf.org/doc/html/rfc5246#section-7.4.2
+
 This program helps system administrators to configure a Web Service that provides full SSL/TLS 
 chain when handshaking.
 
 With server provides all the certificates needed, it is possible to gain a little performance 
 benefit for client verifying the server certificate.
+
+The output of the certificate chain will follow the requirements for `TLS 1.2 Server Certificate`_
 
 .. note:: 
     This program leverages on the existence of CAIssuers field 

@@ -169,27 +169,29 @@ def solve_cert_chain(
     if not issuer_certs:
         raise NoIssuerCertificateError()
 
-    for issuer_cert in issuer_certs:
-        verify_certificate(current_cert, issuer_cert, expire_warning)
+    issuer_cert = issuer_certs.pop() # Get first certificate in store for the issuer
+    verify_certificate(current_cert, issuer_cert, expire_warning)
 
-        if issuer_already_known:
-            continue
-
-        if issuer_cert.subject == issuer_cert.issuer and not issuer_is_root_ca:
-            issuer_is_root_ca = True
-            warnings.warn(
-                "Root CA is unknown to this system",
-                NotTrustedWarning
-            )
-        
-        if issuer_is_root_ca and not include_root_ca:
-            continue
-
-        yield from solve_cert_chain(
-            issuer_cert,
-            ca_certificates,
-            expire_warning,
-            include_root_ca,
-            issuer_is_root_ca or ignore_self_sign_warning,
-            known_certificates
+    if issuer_already_known:
+        raise Exception(
+            "Loop detected in certificate chain."
         )
+
+    if issuer_cert.subject == issuer_cert.issuer and not issuer_is_root_ca:
+        issuer_is_root_ca = True
+        warnings.warn(
+            "Root CA is unknown to this system",
+            NotTrustedWarning
+        )
+    
+    if issuer_is_root_ca and not include_root_ca:
+        return
+
+    yield from solve_cert_chain(
+        issuer_cert,
+        ca_certificates,
+        expire_warning,
+        include_root_ca,
+        issuer_is_root_ca or ignore_self_sign_warning,
+        known_certificates
+    )
