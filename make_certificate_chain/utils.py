@@ -92,11 +92,13 @@ def get_system_ca(
     elif sys.platform == "darwin":
         # https://apple.stackexchange.com/a/436177
         # https://www.unix.com/man-page/osx/1/security/
-        security_process = subprocess.Popen(
+        security_process = subprocess.run(
             ["security", "find-certificate", "-a", "-p"],
-            stdout=subprocess.PIPE
+            capture_output=True,
+            shell=True,
+            check=True
         )
-        ca_list = read_x509_certificates(security_process.stdout.read())
+        ca_list = read_x509_certificates(security_process.stdout)
     else:
         openssl_capath = ssl.get_default_verify_paths().openssl_capath
         ca_list = itertools.chain(*[
