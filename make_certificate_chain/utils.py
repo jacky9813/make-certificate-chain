@@ -85,7 +85,18 @@ def get_system_ca(
     """
         Get the certificates from the system's CA list.
     """
-    if sys.platform == "win32":
+    if path:
+        if os.path.isdir(path):
+            ca_list = list(itertools.chain(*[
+                read_certificate_file(os.path.join(path, filepath))
+                for filepath in [
+                    os.path.join(path, filename)
+                    for filename in os.listdir(path)
+                ]
+            ]))
+        else:
+            ca_list = read_certificate_file(path)
+    elif sys.platform == "win32":
         ca_list = [
             x509.load_der_x509_certificate(ca_info[0])
             for ca_info in ssl.enum_certificates("root")

@@ -44,7 +44,8 @@ def build_pem_chain_and_key(
     cert_type: str,
     cert_raw: bytes,
     key_raw: typing.Optional[bytes] = None,
-    key_pass: typing.Optional[bytes] = None
+    key_pass: typing.Optional[bytes] = None,
+    ca_path: typing.Optional[str] = None
 ) -> typing.Tuple[CertificatePEM, CertificateChainPEM, PrivateKeyPEM]:
     """
         Build certificate chain and private key in PEM format.
@@ -57,6 +58,8 @@ def build_pem_chain_and_key(
         ).strip().encode()
     if not key_pass:
         key_pass = None
+
+    ca_certs = utils.get_system_ca(ca_path)
 
     certs = utils.CERTIFICATE_FORMATS[cert_type](cert_raw, key_pass)
     if cert_type == "pkcs12":
@@ -84,7 +87,7 @@ def build_pem_chain_and_key(
     logger.info("Building certificate chain in PEM format.")
     cert_pem_list = []
     logger.info("=" * PADDING_LENGTH)
-    for cert in solver.solve_cert_chain(certs[0]):
+    for cert in solver.solve_cert_chain(certs[0], ca_certs):
         for line in output_info(cert).splitlines():
             logger.info(line)
         logger.info("=" * PADDING_LENGTH)

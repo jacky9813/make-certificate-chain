@@ -49,6 +49,12 @@ logger = logging.getLogger(__name__)
     help="The region where certificate to be created at. Defaults to global.",
     default="global"
 )
+@click.option(
+    "--capath",
+    help="The path where CA certificates store at. "
+    "Can be a directory containing multiple X.509 files or a single X.509 file. "
+    "Default store path depends on the operating system or OpenSSL configuration."
+)
 def gcp(
     name: str,
     certificate_in: typing.BinaryIO,
@@ -57,7 +63,8 @@ def gcp(
     dry_run: bool,
     project: typing.Optional[str],
     description: str,
-    region: str
+    region: str,
+    capath: typing.Optional[str]
 ):
     """
         Upload certificate chain to Google Cloud.
@@ -70,7 +77,8 @@ def gcp(
         key_raw = key_in[0].read()
 
     _, chain_pem, key_pem = common.build_pem_chain_and_key(
-        cert_type, cert_raw, key_raw
+        cert_type, cert_raw, key_raw,
+        ca_path=capath or None
     )
 
     if dry_run:

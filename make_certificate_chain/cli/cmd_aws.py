@@ -48,6 +48,12 @@ logger = logging.getLogger(__name__)
     help="The region where certificate to be created at. "
     "Defaults to what profile specified."
 )
+@click.option(
+    "--capath",
+    help="The path where CA certificates store at. "
+    "Can be a directory containing multiple X.509 files or a single X.509 file. "
+    "Default store path depends on the operating system or OpenSSL configuration."
+)
 def aws(
     certificate_in: typing.BinaryIO,
     key_in: typing.Tuple[typing.BinaryIO, ...],
@@ -55,7 +61,8 @@ def aws(
     cert_type: str,
     dry_run: bool,
     profile: typing.Optional[str],
-    region: typing.Optional[str]
+    region: typing.Optional[str],
+    capath: typing.Optional[str]
 ):
     """
         Upload certificate chain to AWS Certificate Manager (ACM).
@@ -69,7 +76,8 @@ def aws(
         key_raw = key_in[0].read()
 
     cert_pem, chain_pem, key_pem = common.build_pem_chain_and_key(
-        cert_type, cert_raw, key_raw
+        cert_type, cert_raw, key_raw,
+        ca_path=capath or None
     )
 
     if dry_run:

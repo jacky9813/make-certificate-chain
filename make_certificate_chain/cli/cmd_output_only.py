@@ -25,7 +25,17 @@ logger = logging.getLogger(__name__)
     type=click.Choice([fmt for fmt in utils.CERTIFICATE_FORMATS.keys()], case_sensitive=True),
     help="The format of the certificate file. (Default: x509)"
 )
-def output_only(certificate_in: typing.Tuple[typing.BinaryIO, ...], cert_type: str):
+@click.option(
+    "--capath",
+    help="The path where CA certificates store at. "
+    "Can be a directory containing multiple X.509 files or a single X.509 file. "
+    "Default store path depends on the operating system or OpenSSL configuration."
+)
+def output_only(
+    certificate_in: typing.Tuple[typing.BinaryIO, ...],
+    cert_type: str,
+    capath: typing.Optional[str]
+):
     """
         Output certificate chain to stdout.
         
@@ -38,7 +48,10 @@ def output_only(certificate_in: typing.Tuple[typing.BinaryIO, ...], cert_type: s
     if not certs:
         logger.critical("No certificate found in file.")
         sys.exit(1)
-    for cert in solver.solve_cert_chain(certs[0]):
+
+    ca_certs = utils.get_system_ca(capath or None)
+
+    for cert in solver.solve_cert_chain(certs[0], ca_certs):
         logger.info("=" * common.PADDING_LENGTH)
         for line in common.output_info(cert).splitlines():
             logger.info(line)
