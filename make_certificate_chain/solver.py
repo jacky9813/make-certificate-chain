@@ -169,8 +169,15 @@ def solve_cert_chain(
     if not issuer_certs:
         raise NoIssuerCertificateError()
 
-    issuer_cert = issuer_certs.pop() # Get first certificate in store for the issuer
-    verify_certificate(current_cert, issuer_cert, expire_warning)
+    while True:
+        issuer_cert = issuer_certs.pop()
+        try:
+            verify_certificate(current_cert, issuer_cert, expire_warning)
+        except Exception:
+            if issuer_certs:
+                continue
+            raise
+        break
 
     if issuer_already_known:
         raise Exception(
