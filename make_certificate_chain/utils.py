@@ -5,6 +5,7 @@ import os
 import ssl
 import sys
 import getpass
+import subprocess
 
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import pkcs7
@@ -88,6 +89,14 @@ def get_system_ca(
             x509.load_der_x509_certificate(ca_info[0])
             for ca_info in ssl.enum_certificates("root")
         ]
+    elif sys.platform == "darwin":
+        # https://apple.stackexchange.com/a/436177
+        # https://www.unix.com/man-page/osx/1/security/
+        security_process = subprocess.Popen(
+            ["security", "find-certificate", "-a", "-p"],
+            stdout=subprocess.PIPE
+        )
+        ca_list = read_x509_certificates(security_process.stdout.read())
     else:
         openssl_capath = ssl.get_default_verify_paths().openssl_capath
         ca_list = itertools.chain(*[
