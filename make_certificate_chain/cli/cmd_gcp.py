@@ -1,20 +1,13 @@
 import typing
 import logging
-import getpass
 import sys
 
 import click
-from cryptography.hazmat.primitives.serialization import Encoding
-from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from cryptography.hazmat.primitives.serialization import load_der_private_key
-from cryptography.hazmat.primitives.serialization import PrivateFormat
-from cryptography.hazmat.primitives.serialization import NoEncryption
 from google.cloud import compute_v1
 
 from .cli import cli
 from . import common
 from .. import utils
-from .. import solver
 
 
 logger = logging.getLogger(__name__)
