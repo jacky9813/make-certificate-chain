@@ -7,6 +7,7 @@ import sys
 import getpass
 import subprocess
 
+import certifi
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import pkcs7
 from cryptography.hazmat.primitives.serialization import pkcs12
@@ -90,15 +91,24 @@ def get_system_ca(
             for ca_info in ssl.enum_certificates("root")
         ]
     elif sys.platform == "darwin":
-        # https://apple.stackexchange.com/a/436177
-        # https://www.unix.com/man-page/osx/1/security/
-        security_process = subprocess.run(
-            ["security", "find-certificate", "-a", "-p"],
-            capture_output=True,
-            shell=True,
-            check=True
-        )
-        ca_list = read_x509_certificates(security_process.stdout)
+        try:
+            # https://apple.stackexchange.com/a/436177
+            # https://www.unix.com/man-page/osx/1/security/
+
+            # I'm not using macos. I can't verify the following command
+            # would work or not.
+            security_process = subprocess.run(
+                ["security", "find-certificate", "-a", "-p"],
+                capture_output=True,
+                shell=True,
+                check=True
+            )
+            ca_pem_raw = security_process.stdout
+        except subprocess.CalledProcessError:
+            # If the command failed, use certificates in certifi package.
+            with open(certifi.where(), mode="rb") as cert_fd:
+                ca_pem_raw = cert_fd.read()
+        ca_list = read_x509_certificates(ca_pem_raw)
     else:
         openssl_capath = ssl.get_default_verify_paths().openssl_capath
         ca_list = itertools.chain(*[
