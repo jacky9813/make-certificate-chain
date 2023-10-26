@@ -17,8 +17,8 @@ classifiers = [
 ]
 dependencies = [
     "certifi>=2023.7.22",
-    "requests>=2.28.2",
-    "cryptography>=39.0.1",
+    "requests>=2.31.0",
+    "cryptography>=40.0.0",
     "click>=8.1.7",
     "boto3>=1.28.69",
     "google-cloud-compute>=1.14.1"
