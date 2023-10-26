@@ -34,7 +34,9 @@ Supported Certificate Formats / Encodings
 =========================================
 
 - X.509 in PEM or DER encoding (``--cert-type=x509``)
+
 - PKCS#7 certificates bundle in PEM or DER encoding (``--cert-type=pkcs7``)
+
 - PKCS#12 certificates and key bundle in DER encoding (``--cert-type=pkcs12``)
 
 .. important::
@@ -55,6 +57,7 @@ Supported Importing Destinations
 .. _Global/Regional SSL Certificates: https://cloud.google.com/load-balancing/docs/ssl-certificates/self-managed-certs
 
 - AWS - `AWS Certificate Manager`_ (ACM)
+
 - Google Cloud - `Global/Regional SSL Certificates`_
 
 
@@ -65,9 +68,12 @@ System Requirements
 .. _Google Cloud CLI: https://cloud.google.com/sdk/docs/install
 
 - Python 3.8 or later
+
 - For import certificate to cloud services:
-    - `AWS CLI`_ for import certificate to AWS Certificate Manager (ACM)
-    - `Google Cloud CLI`_ for import certificate to Google Cloud
+
+  - `AWS CLI`_ for import certificate to AWS Certificate Manager (ACM)
+
+  - `Google Cloud CLI`_ for import certificate to Google Cloud
 
 
 Install & Upgrade
