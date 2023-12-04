@@ -17,8 +17,7 @@ from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 
 CERTIFICATE_BEGIN = "-----BEGIN CERTIFICATE-----"
 CERTIFICATE_RE = re.compile(
-    r"((?:-{5}BEGIN CERTIFICATE-{5})[0-9a-zA-Z+/=\r\n]+(?:-{5}END CERTIFICATE-{5}))",
-    re.DEBUG
+    r"((?:-{5}BEGIN CERTIFICATE-{5})[0-9a-zA-Z+/=\r\n]+(?:-{5}END CERTIFICATE-{5}))"
 )
 PKCS7_BEGIN = "-----BEGIN PKCS7-----"
 
