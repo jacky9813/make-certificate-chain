@@ -6,6 +6,7 @@ import ssl
 import sys
 import getpass
 import subprocess
+import re
 
 import certifi
 from cryptography import x509
@@ -15,6 +16,10 @@ from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 
 
 CERTIFICATE_BEGIN = "-----BEGIN CERTIFICATE-----"
+CERTIFICATE_RE = re.compile(
+    r"((?:-{5}BEGIN CERTIFICATE-{5})[0-9a-zA-Z+/=\r\n]+(?:-{5}END CERTIFICATE-{5}))",
+    re.DEBUG
+)
 PKCS7_BEGIN = "-----BEGIN PKCS7-----"
 
 CertificateList = typing.Dict[str, typing.List[x509.Certificate]]
@@ -24,8 +29,15 @@ def read_x509_certificates(
     raw_data: bytes,
     password: typing.Optional[bytes] = None
 ) -> typing.List[x509.Certificate]:
-    if CERTIFICATE_BEGIN.encode() in raw_data:
-        return x509.load_pem_x509_certificates(raw_data)
+    try:
+        str_data = raw_data.decode()
+    except UnicodeDecodeError:
+        str_data = None
+    if str_data:
+        return [
+            x509.load_pem_x509_certificate(match.group(1).encode())
+            for match in CERTIFICATE_RE.finditer(str_data)
+        ]
     return [x509.load_der_x509_certificate(raw_data)]
 
 
