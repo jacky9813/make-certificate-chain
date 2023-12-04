@@ -31,10 +31,17 @@ logger = logging.getLogger(__name__)
     "Can be a directory containing multiple X.509 files or a single X.509 file. "
     "Default store path depends on the operating system or OpenSSL configuration."
 )
+@click.option(
+    "-o", "--output",
+    help="The filename for the certificate chain. Defaults to stdout.",
+    type=click.File(mode="w"),
+    default=sys.stdout
+)
 def output_only(
     certificate_in: typing.Tuple[typing.BinaryIO, ...],
     cert_type: str,
-    capath: typing.Optional[str]
+    capath: typing.Optional[str],
+    output: typing.TextIO
 ):
     """
         Output certificate chain to stdout.
@@ -56,4 +63,8 @@ def output_only(
         for line in common.output_info(cert).splitlines():
             logger.info(line)
         logger.info("=" * common.PADDING_LENGTH)
-        print(cert.public_bytes(Encoding.PEM).decode().strip())
+        print(
+            cert.public_bytes(Encoding.PEM).decode().strip(),
+            file=output
+        )
+

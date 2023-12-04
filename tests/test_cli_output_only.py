@@ -13,31 +13,34 @@ def test_cli_output_only(example_com_cert: bytes):
         
         result = runner.invoke(
             cli,
-            ["output-only", "server.cert.pem"]
+            ["output-only", "-o", f"{__name__}.chain.pem", "server.cert.pem"]
         )
 
-    assert result.exit_code == 0
-    certs = x509.load_pem_x509_certificates(result.stdout.encode())
-    assert len(certs) > 1
-    sans = [
-        san.value
-        for san in certs[0].extensions.get_extension_for_class(x509_extensions.SubjectAlternativeName).value
-    ]
-    assert "example.com" in sans
+        assert result.exit_code == 0
+        with open(f"{__name__}.chain.pem", mode="rb") as chain_fd:
+            certs = x509.load_pem_x509_certificates(chain_fd.read())
+        assert len(certs) > 1
+        sans = [
+            san.value
+            for san in certs[0].extensions.get_extension_for_class(x509_extensions.SubjectAlternativeName).value
+        ]
+        assert "example.com" in sans
 
 
 def test_cli_output_only_with_stdin(example_com_cert: bytes):
     runner = click.testing.CliRunner()
-    result = runner.invoke(
-        cli,
-        ["output-only"],
-        input=example_com_cert
-    )
-    assert result.exit_code == 0
-    certs = x509.load_pem_x509_certificates(result.stdout.encode())
-    assert len(certs) > 1
-    sans = [
-        san.value
-        for san in certs[0].extensions.get_extension_for_class(x509_extensions.SubjectAlternativeName).value
-    ]
-    assert "example.com" in sans
+    with runner.isolated_filesystem():
+        result = runner.invoke(
+            cli,
+            ["output-only", "-o", f"{__name__}.chain.pem"],
+            input=example_com_cert
+        )
+        assert result.exit_code == 0
+        with open(f"{__name__}.chain.pem", mode="rb") as chain_fd:
+            certs = x509.load_pem_x509_certificates(chain_fd.read())
+        assert len(certs) > 1
+        sans = [
+            san.value
+            for san in certs[0].extensions.get_extension_for_class(x509_extensions.SubjectAlternativeName).value
+        ]
+        assert "example.com" in sans
