@@ -34,10 +34,16 @@ def verify_certificate(
         not_valid_before = subject.not_valid_before_utc
         not_valid_after = subject.not_valid_after_utc
     else:
-        current_time = datetime.datetime.utcnow()
+        current_time = datetime.datetime.now(datetime.timezone.utc)
         not_valid_before = subject.not_valid_before
         not_valid_after = subject.not_valid_after
-    if current_time < subject.not_valid_before:
+        not_valid_after = not_valid_after.replace(
+            tzinfo=datetime.timezone.utc
+        )
+        not_valid_before = not_valid_before.replace(
+            tzinfo=datetime.timezone.utc
+        )
+    if current_time < not_valid_before:
         warnings.warn(
             f'The certificate is valid after '
             f'{not_valid_before.strftime("%Y-%m-%dT%H:%M:%SZ")}',
