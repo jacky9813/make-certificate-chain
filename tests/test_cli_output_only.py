@@ -10,7 +10,7 @@ def test_cli_output_only(example_com_cert: bytes):
     with runner.isolated_filesystem():
         with open("server.cert.pem", mode="wb") as cert_fd:
             cert_fd.write(example_com_cert)
-        
+
         result = runner.invoke(
             cli,
             ["output-only", "-o", f"{__name__}.chain.pem", "server.cert.pem"]
@@ -22,7 +22,9 @@ def test_cli_output_only(example_com_cert: bytes):
         assert len(certs) > 1
         sans = [
             san.value
-            for san in certs[0].extensions.get_extension_for_class(x509_extensions.SubjectAlternativeName).value
+            for san in certs[0].extensions.get_extension_for_class(
+                x509_extensions.SubjectAlternativeName
+            ).value
         ]
         assert "example.com" in sans
 
@@ -41,6 +43,8 @@ def test_cli_output_only_with_stdin(example_com_cert: bytes):
         assert len(certs) > 1
         sans = [
             san.value
-            for san in certs[0].extensions.get_extension_for_class(x509_extensions.SubjectAlternativeName).value
+            for san in certs[0].extensions.get_extension_for_class(
+                x509_extensions.SubjectAlternativeName
+            ).value
         ]
         assert "example.com" in sans
