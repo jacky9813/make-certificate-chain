@@ -1,1 +1,3 @@
-VERSION = "0.2.0a2"
+import importlib.metadata
+
+VERSION = importlib.metadata.version("make_certificate_chain")

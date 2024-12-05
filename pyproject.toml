@@ -42,11 +42,13 @@ mkcertchain = "make_certificate_chain.__main__:main"
 repository = "https://github.com/jacky9813/make-certificate-chain"
 
 [build-system]
-requires = ["setuptools>=61.0.0"]
+requires = [
+    "setuptools>=65.0.0",
+    "setuptools-scm[toml]>=8.1.0"
+]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.dynamic]
-version = {attr = "make_certificate_chain.VERSION"}
+[tool.setuptools_scm]
 
 [tool.setuptools.package-dir]
 make_certificate_chain = "make_certificate_chain"

@@ -1,7 +1,7 @@
 from .cli import cli
-from .. import VERSION
+import importlib.metadata
 
 @cli.command()
 def version():
     "Shows current program version"
-    print(VERSION)
+    print(importlib.metadata.version("make_certificate_chain"))
