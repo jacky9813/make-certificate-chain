@@ -18,8 +18,10 @@ logger = logging.getLogger(__name__)
 INFO_OUTPUT: typing.Dict[str, typing.Callable[[x509.Certificate], str]]={
     "Subject": lambda cert: cert.subject.rfc4514_string(),
     "Issuer": lambda cert: cert.issuer.rfc4514_string(),
-    "Not Before": lambda cert: cert.not_valid_before.strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "Not After": lambda cert: cert.not_valid_after.strftime("%Y-%m-%dT%H:%M:%SZ")
+    "Not Before": lambda cert: cert.not_valid_before_utc.strftime(
+        "%Y-%m-%dT%H:%M:%SZ"),
+    "Not After": lambda cert: cert.not_valid_after_utc.strftime(
+        "%Y-%m-%dT%H:%M:%SZ")
 }
 PADDING_LENGTH = 12
 
