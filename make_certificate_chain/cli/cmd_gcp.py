@@ -29,12 +29,14 @@ logger = logging.getLogger(__name__)
     type=click.Choice([
         fmt for fmt in utils.CERTIFICATE_FORMATS.keys()
     ], case_sensitive=True),
-    help="The format of the certificate file. (Default: x509)"
+    help="The format of the certificate file.",
+    show_default=True
 )
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Do not perform change to Google Cloud."
+    help="Do not perform change to Google Cloud.",
+    show_default=True
 )
 @click.option(
     "--project",
@@ -46,8 +48,9 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--region",
-    help="The region where certificate to be created at. Defaults to global.",
-    default="global"
+    help="The region where certificate to be created at.",
+    default="global",
+    show_default=True
 )
 @click.option(
     "--capath",

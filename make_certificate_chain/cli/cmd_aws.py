@@ -32,12 +32,14 @@ logger = logging.getLogger(__name__)
     type=click.Choice([
         fmt for fmt in utils.CERTIFICATE_FORMATS.keys()
     ], case_sensitive=True),
-    help="The format of the certificate file. (Default: x509)"
+    help="The format of the certificate file.",
+    show_default=True
 )
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Do not perform change to AWS."
+    help="Do not perform change to AWS.",
+    show_default=True
 )
 @click.option(
     "--profile",

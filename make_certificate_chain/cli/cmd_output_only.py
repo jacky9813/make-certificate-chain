@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
     "--cert-type",
     default="x509",
     type=click.Choice([fmt for fmt in utils.CERTIFICATE_FORMATS.keys()], case_sensitive=True),
-    help="The format of the certificate file. (Default: x509)"
+    help="The format of the certificate file.",
+    show_default=True
 )
 @click.option(
     "--capath",
@@ -33,9 +34,10 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "-o", "--output",
-    help="The filename for the certificate chain. Defaults to stdout.",
+    help="The filename for the certificate chain.",
     type=click.File(mode="w"),
-    default=sys.stdout
+    default="-",
+    show_default=True
 )
 def output_only(
     certificate_in: typing.Tuple[typing.BinaryIO, ...],
