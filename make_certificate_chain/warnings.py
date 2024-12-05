@@ -9,5 +9,6 @@ class NearExpirationWarning(PendingDeprecationWarning):
 class SelfSignCertificateWarning(ResourceWarning):
     pass
 
+
 class NotTrustedWarning(ResourceWarning):
     pass

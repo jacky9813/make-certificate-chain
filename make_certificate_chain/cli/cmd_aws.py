@@ -47,14 +47,15 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--region",
-    help="The region where certificate to be created at. "
-    "Defaults to what profile specified."
+    help="The region where certificate to be created at. Defaults to what "
+    "has specified in the profile."
 )
 @click.option(
     "--capath",
     help="The path where CA certificates store at. "
-    "Can be a directory containing multiple X.509 files or a single X.509 file. "
-    "Default store path depends on the operating system or OpenSSL configuration."
+    "Can be a directory containing multiple X.509 files or a single X.509 "
+    "file. Default store path depends on the operating system or OpenSSL "
+    "configuration."
 )
 def aws(
     certificate_in: typing.BinaryIO,
@@ -71,7 +72,7 @@ def aws(
 
         Certificate ARN will be shown in stdout after import/reimport.
     """
-    
+
     cert_raw = certificate_in.read()
     key_raw = None
     if key_in and key_in[0] != sys.stdin.buffer:
@@ -91,7 +92,10 @@ def aws(
         return
 
     session = boto3.Session(**({"profile_name": profile} if profile else {}))
-    acm_client = session.client("acm", **({"region_name": region} if region else {}))
+    acm_client = session.client(
+        "acm",
+        **({"region_name": region} if region else {})
+    )
 
     response = acm_client.import_certificate(
         Certificate=cert_pem.encode(),

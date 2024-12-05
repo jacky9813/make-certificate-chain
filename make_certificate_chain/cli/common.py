@@ -73,7 +73,7 @@ def build_pem_chain_and_key(
             key = load_pem_private_key(key_raw, key_pass)
         else:
             key = load_der_private_key(key_raw, key_pass)
-    
+
     logger.info("Comparing public keys in certificate and private key.")
     if key.public_key() != certs[0].public_key():
         raise Exception("Certificate's public key not matching the key file.")

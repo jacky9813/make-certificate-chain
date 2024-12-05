@@ -40,7 +40,9 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--project",
-    help="Google Cloud project id. Program uses current project in gcloud by default."
+    help="Google Cloud project id. Program uses default project in "
+    "application default credentials by default. Change the default project "
+    "with \"gcloud auth application-default set-quota-project\"."
 )
 @click.option(
     "--description",
@@ -55,8 +57,9 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--capath",
     help="The path where CA certificates store at. "
-    "Can be a directory containing multiple X.509 files or a single X.509 file. "
-    "Default store path depends on the operating system or OpenSSL configuration."
+    "Can be a directory containing multiple X.509 files or a single X.509 "
+    "file. Default store path depends on the operating system or OpenSSL "
+    "configuration."
 )
 def gcp(
     name: str,
@@ -95,7 +98,7 @@ def gcp(
         ]))
         print(chain_pem)
         return
-    
+
     ssl_cert = compute_v1.SslCertificate(
         certificate=chain_pem,
         private_key=key_pem,
@@ -110,7 +113,7 @@ def gcp(
         additional_args["region"] = region
         ssl_cert_client = compute_v1.RegionSslCertificatesClient()
         operation_client = compute_v1.RegionOperationsClient()
-        
+
     logger.info(
         "Creating GCP SSL Certificate %s for project %s in %s",
         name, project, region

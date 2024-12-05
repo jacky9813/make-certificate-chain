@@ -47,7 +47,7 @@ def read_pkcs7_certificates(
     if PKCS7_BEGIN.encode() in raw_data:
         return pkcs7.load_pem_pkcs7_certificates(raw_data)
     return pkcs7.load_der_pkcs7_certificates(raw_data)
-    
+
 
 def read_pkcs12_certificates(
     raw_data: bytes,
@@ -68,7 +68,10 @@ def read_pkcs12_certificates(
 
 CERTIFICATE_FORMATS: typing.Dict[
     str,
-    typing.Callable[[bytes, typing.Optional[bytes]], typing.List[x509.Certificate]]
+    typing.Callable[
+        [bytes, typing.Optional[bytes]],
+        typing.List[x509.Certificate]
+    ]
 ] = {
     "x509": read_x509_certificates,
     "pkcs7": read_pkcs7_certificates,
@@ -80,19 +83,20 @@ def read_pkcs12_key(
     pkcs12_raw: bytes,
     password: typing.Optional[bytes] = None
 ) -> typing.Optional[PrivateKeyTypes]:
-    parsed_p12 = pkcs12.load_pkcs12(pkcs12_raw,password)
+    parsed_p12 = pkcs12.load_pkcs12(pkcs12_raw, password)
     return parsed_p12.key
 
 
-def read_certificate_file(path: str, cert_fmt: str = "x509") -> typing.List[x509.Certificate]:
+def read_certificate_file(
+    path: str,
+    cert_fmt: str = "x509"
+) -> typing.List[x509.Certificate]:
     with open(path, mode="rb") as cert_fd:
         certs = CERTIFICATE_FORMATS[cert_fmt](cert_fd.read())
     return certs
 
 
-def get_system_ca(
-    path = None
-) -> CertificateList:
+def get_system_ca(path = None) -> CertificateList:
     """
         Get the certificates from the system's CA list.
     """
@@ -138,7 +142,7 @@ def get_system_ca(
             for ca_cert in glob.glob(os.path.join(openssl_capath, "*"))
             if os.path.isfile(ca_cert)
         ])
-        
+
     output: typing.Dict[str, typing.List[x509.Certificate]] = {}
     for ca_cert in ca_list:
         ca_subject = ca_cert.subject.rfc4514_string()

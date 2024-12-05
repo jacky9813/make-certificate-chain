@@ -6,24 +6,26 @@ Make Certificate Chain
 
 .. _TLS 1.2 Server Certificate: https://datatracker.ietf.org/doc/html/rfc5246#section-7.4.2
 
-This program helps system administrators to configure a Web Service that provides full SSL/TLS 
-chain when handshaking.
+This program helps system administrators to configure a Web Service that 
+provides full SSL/TLS chain when handshaking.
 
-With server provides all the certificates needed, it is possible to gain a little performance 
-benefit for client verifying the server certificate.
+With server provides all the certificates needed, it is possible to gain a
+little performance benefit for client verifying the server certificate.
 
-The output of the certificate chain will follow the requirements for `TLS 1.2 Server Certificate`_
+The output of the certificate chain will follow the requirements for
+`TLS 1.2 Server Certificate`_
 
 .. note:: 
-    This program leverages on the existence of CAIssuers field 
-    (OID: ``1.3.6.1.5.5.7.48.2``).
+    This program leverages on the existence of CAIssuers field in the authority
+    information access extension (OID: ``1.3.6.1.5.5.7.48.2``).
 
 
 Certificate Validation
 ======================
 
-User shouldn't seen SSL handshake error due to invalid certificate. This program also validates
-all certificates in chain. These are the items being checked across all certificates in chain:
+User shouldn't seen SSL handshake error due to invalid certificate. This
+program also validates all certificates in chain. These are the items being
+checked across all certificates in chain:
 
 - Signature
 - Issuer name and subject name in issuer's certficate.
@@ -40,14 +42,15 @@ Supported Certificate Formats / Encodings
 - PKCS#12 certificates and key bundle in DER encoding (``--cert-type=pkcs12``)
 
 .. important::
-    For PKCS#12 bundle, when importing certificate into cloud services, this program will only
-    use bundled private key.
+    For PKCS#12 bundle, when importing certificate into cloud services, this
+    program will only use bundled private key.
 
     If the bundle doesn't contain the key, the program will fail.
 
 .. important::
-    For containers capable of bundling multiple certificates (X.509 in PEM, PKCS#7, PKCS#12),
-    only the first certificate will be parsed by this program.
+    For containers capable of bundling multiple certificates (X.509 in PEM,
+    PKCS#7, PKCS#12), only the first certificate will be parsed by this
+    program.
 
 
 Supported Importing Destinations
@@ -58,7 +61,7 @@ Supported Importing Destinations
 
 - AWS - `AWS Certificate Manager`_ (ACM)
 
-- Google Cloud - `Global/Regional SSL Certificates`_
+- Google Cloud - `Compute Engine Global/Regional SSL Certificates`_
 
 
 System Requirements
@@ -89,8 +92,8 @@ Usage
 
 .. note::
 
-    Unlike OpenSSL, this program detects the format automatically, so you don't have to put
-    ``-inform`` equivalent parameter.
+    Unlike OpenSSL, this program detects the format automatically, so you don't
+    have to put ``-inform`` equivalent parameter.
 
 Example 1: Simple usage
 -----------------------
@@ -113,9 +116,10 @@ Example 3: Create SSL Certificate in Google Cloud
 .. code-block:: shell
 
     # Log into Google Cloud and update Application Default Credentials
-    gcloud auth login --update-adc
-    # The following command will ask password for private key, even it's unencrypted.
-    # In such case, input nothing but enter when prompted for password.
+    gcloud auth application-default login
+    # The following command will ask password for private key, even it's
+    # unencrypted. In such case, input nothing but enter when prompted for
+    # password.
     mkcertchain gcp --project my-project my-certificate server.cert.pem server.key.pem
 
 Example 4: Create SSL Certificate in AWS with PKCS#12 bundle

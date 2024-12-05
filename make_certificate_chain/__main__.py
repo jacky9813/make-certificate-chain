@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import logging
+
+# Logging config must be executed before importing cli
 logging.basicConfig(
     format="[%(asctime)s] %(filename)s:%(lineno)d %(levelname)s: %(message)s",
     level=logging.INFO,

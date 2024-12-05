@@ -22,15 +22,19 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--cert-type",
     default="x509",
-    type=click.Choice([fmt for fmt in utils.CERTIFICATE_FORMATS.keys()], case_sensitive=True),
+    type=click.Choice([
+        fmt
+        for fmt in utils.CERTIFICATE_FORMATS.keys()
+    ], case_sensitive=True),
     help="The format of the certificate file.",
     show_default=True
 )
 @click.option(
     "--capath",
     help="The path where CA certificates store at. "
-    "Can be a directory containing multiple X.509 files or a single X.509 file. "
-    "Default store path depends on the operating system or OpenSSL configuration."
+    "Can be a directory containing multiple X.509 files or a single X.509 "
+    "file. Default store path depends on the operating system or OpenSSL "
+    "configuration."
 )
 @click.option(
     "-o", "--output",
@@ -47,7 +51,7 @@ def output_only(
 ):
     """
         Output certificate chain to stdout.
-        
+
         Leave certificate_in blank for reading from stdin.
     """
     if not certificate_in:

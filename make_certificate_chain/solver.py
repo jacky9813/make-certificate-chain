@@ -1,7 +1,6 @@
 import typing
 import datetime
 import warnings
-import importlib.metadata
 
 from cryptography import x509
 from cryptography.x509 import extensions as x509_extensions
@@ -11,10 +10,6 @@ import requests
 from .warnings import SelfSignCertificateWarning, NotValidYetWarning, NearExpirationWarning, NotTrustedWarning
 from .exceptions import CertificateExpiredError, NoIssuerCertificateError
 from . import utils
-
-
-CRYPTOGRAPHY_VERSION = int(importlib.metadata.distribution("cryptography").version.split('.')[0])
-USE_TIMEZONE_AWARE_DATETIME = CRYPTOGRAPHY_VERSION >= 42
 
 
 def verify_certificate(
@@ -29,20 +24,15 @@ def verify_certificate(
         * Issuer's distinguished name.
         * Issuer's public key (signature check).
     """
-    if USE_TIMEZONE_AWARE_DATETIME:
-        current_time = datetime.datetime.now(datetime.timezone.utc)
-        not_valid_before = subject.not_valid_before_utc
-        not_valid_after = subject.not_valid_after_utc
-    else:
-        current_time = datetime.datetime.now(datetime.timezone.utc)
-        not_valid_before = subject.not_valid_before
-        not_valid_after = subject.not_valid_after
-        not_valid_after = not_valid_after.replace(
-            tzinfo=datetime.timezone.utc
-        )
-        not_valid_before = not_valid_before.replace(
-            tzinfo=datetime.timezone.utc
-        )
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+    not_valid_before = subject.not_valid_before
+    not_valid_after = subject.not_valid_after
+    not_valid_after = not_valid_after.replace(
+        tzinfo=datetime.timezone.utc
+    )
+    not_valid_before = not_valid_before.replace(
+        tzinfo=datetime.timezone.utc
+    )
     if current_time < not_valid_before:
         warnings.warn(
             f'The certificate is valid after '
@@ -75,9 +65,7 @@ def verify_certificate(
     )
 
 
-def get_issuer_certificate(
-    subject: x509.Certificate
-) -> utils.CertificateList:
+def get_issuer_certificate(subject: x509.Certificate) -> utils.CertificateList:
     """
         Tries to fetch the certificate listed in the certificate extension
         "Authority Information Access"
@@ -120,7 +108,7 @@ def get_issuer_certificate(
         if cert_subject not in cert_output:
             cert_output[cert_subject] = list()
         cert_output[cert_subject].append(cert)
-    
+
     return cert_output
 
 
@@ -133,10 +121,11 @@ def solve_cert_chain(
     known_certificates: typing.Optional[utils.CertificateList] = None
 ) -> typing.Generator[x509.Certificate, None, None]:
     """
-        Return a list that contains the certificate chain, with server certificate
-        being the first element.
+        Return a list that contains the certificate chain, with server
+        certificate being the first element.
 
-        The root CA's certificate will not be included unless include_root_ca is True.
+        The root CA's certificate will not be included unless include_root_ca
+        is True.
     """
     yield current_cert
     if current_cert.issuer == current_cert.subject:
@@ -157,7 +146,7 @@ def solve_cert_chain(
 
     if known_certificates is None:
         known_certificates = dict()
-    
+
     issuer_name = current_cert.issuer.rfc4514_string()
     issuer_is_root_ca = False
     issuer_already_known = False
@@ -171,7 +160,7 @@ def solve_cert_chain(
     else:
         issuer_certs = get_issuer_certificate(current_cert).get(issuer_name, [])
         known_certificates[issuer_name] = issuer_certs
-    
+
     if not issuer_certs:
         raise NoIssuerCertificateError()
 
@@ -186,9 +175,7 @@ def solve_cert_chain(
         break
 
     if issuer_already_known:
-        raise Exception(
-            "Loop detected in certificate chain."
-        )
+        raise Exception("Loop detected in certificate chain.")
 
     if issuer_cert.subject == issuer_cert.issuer and not issuer_is_root_ca:
         issuer_is_root_ca = True
@@ -196,7 +183,7 @@ def solve_cert_chain(
             "Root CA is unknown to this system",
             NotTrustedWarning
         )
-    
+
     if issuer_is_root_ca and not include_root_ca:
         return
 
