@@ -71,7 +71,8 @@ def read_pkcs12_certificates(
 ) -> typing.List[x509.Certificate]:
     parsed_p12 = pkcs12.load_pkcs12(
         raw_data,
-        password or getpass.getpass(prompt="PKCS#12 password: ").strip().encode()
+        password or getpass.getpass(
+            prompt="PKCS#12 password: ").strip().encode()
     )
     # If there's no key in the PKCS#12, parsed_p12.cert will be None
     return [
@@ -177,8 +178,17 @@ def get_system_ca(path = None) -> CertificateList:
 
 def get_ocsp_link(cert: x509.Certificate) -> typing.Optional[str]:
     "Get the link for OCSP from Authority Information Access extension"
-    cert_aia = cert.extensions.get_extension_for_class(
-        x509.AuthorityInformationAccess)
+    try:
+        cert_aia = cert.extensions.get_extension_for_class(
+            x509.AuthorityInformationAccess)
+    except x509.ExtensionNotFound:
+        logger.warning(
+            "Certificate %s (%s) does not contain Authority Information "
+            "Access extension",
+            cert.serial_number.to_bytes(16).hex().upper(),
+            cert.subject.rfc4514_string()
+        )
+        return
     try:
         link = next(iter([
             aia_value.access_location.value
@@ -225,12 +235,21 @@ def verify_against_ocsp(
     if not ocsp_link:
         if raise_error:
             raise ValueError(
-                "cert does not contain Authority Information Access extension"
+                "cert does not contain Authority Information Access extension "
+                "with OCSP endpoint."
             )
         logger.error(
-            "cert does not contain Authority Information Access extension"
+            "cert does not contain Authority Information Access extension "
+            "with OCSP endpoint."
         )
         return False
+    if (
+        not ocsp_link.startswith("http://") and
+        not ocsp_link.startswith("https://")
+    ):
+        raise NotImplementedError(
+            "Non-HTTP(S) OCSP Stapling endpoint not supported"
+        )
     ocsp_get_url = urllib.parse.urljoin(ocsp_link, ocsp_request_b64_url)
 
     try:
