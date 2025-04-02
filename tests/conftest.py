@@ -5,7 +5,7 @@ from cryptography import x509
 from cryptography.x509 import extensions as x509_extensions
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import rsa, ec, ed25519, ed448, dsa
 from cryptography.hazmat.primitives.serialization import pkcs7
 from cryptography.hazmat.primitives.serialization import pkcs12
 from cryptography.hazmat.primitives.serialization import BestAvailableEncryption, Encoding
@@ -88,10 +88,22 @@ def cert_with_invalid_signature() -> x509.Certificate:
     another_cert = x509.load_pem_x509_certificate(another_cert_str.encode())
 
     ca_dn = another_cert.issuer
-    ca_aia = another_cert.extensions.get_extension_for_class(x509_extensions.AuthorityInformationAccess)
-    ca_cert = solver.get_issuer_certificate(another_cert)[ca_dn.rfc4514_string()][0]
+    ca_aia = another_cert.extensions.get_extension_for_class(
+        x509_extensions.AuthorityInformationAccess
+    )
+    ca_cert = solver.get_issuer_certificate(
+        another_cert)[ca_dn.rfc4514_string()][0]
+    true_ca_public_key = ca_cert.public_key()
 
-    invalid_ca_key = rsa.generate_private_key(65537, ca_cert.public_key().key_size)
+    if isinstance(true_ca_public_key, rsa.RSAPublicKey):
+        invalid_ca_key = rsa.generate_private_key(
+            65537,
+            ca_cert.public_key().key_size
+        )
+    elif isinstance(true_ca_public_key, ec.EllipticCurvePublicKey):
+        invalid_ca_key = ec.generate_private_key(
+            true_ca_public_key.curve
+        )
     private_key = rsa.generate_private_key(65537, 2048)
     FQDN = "just.testing"
     dn = x509.Name([
@@ -100,20 +112,29 @@ def cert_with_invalid_signature() -> x509.Certificate:
         x509.NameAttribute(NameOID.COMMON_NAME, FQDN)
     ])
     cert = x509.CertificateBuilder(
-        issuer_name=ca_dn, subject_name=dn,
-        public_key=private_key.public_key(), serial_number=x509.random_serial_number(),
-        not_valid_before=datetime.datetime.utcnow() - datetime.timedelta(days=30),
-        not_valid_after=datetime.datetime.utcnow() + datetime.timedelta(days=1),
+        issuer_name=ca_dn,
+        subject_name=dn,
+        public_key=private_key.public_key(),
+        serial_number=x509.random_serial_number(),
+        not_valid_before=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30),
+        not_valid_after=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1),
     ).add_extension(
         x509.SubjectAlternativeName([x509.DNSName(FQDN)]),
         critical=False
     ).add_extension(
         x509.AuthorityInformationAccess(ca_aia.value),
         critical=False
-    ).sign(
-        private_key=invalid_ca_key,
-        algorithm=hashes.SHA256()
     )
+    if isinstance(invalid_ca_key, rsa.RSAPrivateKey):
+        cert = cert.sign(
+            private_key=invalid_ca_key,
+            algorithm=hashes.SHA256()
+        )
+    elif isinstance(invalid_ca_key, ec.EllipticCurvePrivateKey):
+        cert = cert.sign(
+            private_key=invalid_ca_key,
+            algorithm=hashes.SHA384()
+        )
     return cert
 
 
