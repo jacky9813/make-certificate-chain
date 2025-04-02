@@ -87,6 +87,9 @@ def verify_certificate(
             subject.signature_hash_algorithm
         )
 
+    if subject != issuer:
+        utils.verify_against_ocsp(subject, issuer)
+
 
 def get_issuer_certificate(subject: x509.Certificate) -> utils.CertificateList:
     """
