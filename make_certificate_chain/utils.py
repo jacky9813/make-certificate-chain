@@ -21,6 +21,8 @@ from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.hashes import SHA1, SHA256
 import requests
 
+from . import exceptions
+
 
 CERTIFICATE_BEGIN = "-----BEGIN CERTIFICATE-----"
 CERTIFICATE_RE = re.compile(
@@ -279,4 +281,13 @@ def verify_against_ocsp(
                 f"{ocsp_response.response_status.name}"
             )
         return False
+    if (
+        ocsp_response.certificate_status != ocsp.OCSPCertStatus.GOOD and
+        raise_error
+    ):
+        raise exceptions.OCSPVerificationFailed(
+            cert=cert,
+            ocsp_source=ocsp_link,
+            ocsp_response=ocsp_response
+        )
     return ocsp_response.certificate_status == ocsp.OCSPCertStatus.GOOD
