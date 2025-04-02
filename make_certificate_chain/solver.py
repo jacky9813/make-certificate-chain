@@ -5,6 +5,7 @@ import warnings
 from cryptography import x509
 from cryptography.x509 import extensions as x509_extensions
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
+from cryptography.hazmat.primitives.asymmetric import dsa, ec, ed25519, ed448, rsa
 import requests
 
 from .warnings import SelfSignCertificateWarning, NotValidYetWarning, NearExpirationWarning, NotTrustedWarning
@@ -57,12 +58,34 @@ def verify_certificate(
             f'Issuer in subject certificate: {subject.issuer.rfc4514_string()}' "\n"
             f'Subject in issuer certificate: {issuer.subject.rfc4514_string()}'
         )
-    issuer.public_key().verify(
-        subject.signature,
-        subject.tbs_certificate_bytes,
-        PKCS1v15(),
-        subject.signature_hash_algorithm
-    )
+    issuer_public_key = issuer.public_key()
+    if isinstance(issuer_public_key, dsa.DSAPublicKey):
+        issuer_public_key.verify(
+            subject.signature,
+            subject.tbs_certificate_bytes,
+            subject.signature_hash_algorithm
+        )
+    elif isinstance(issuer_public_key, ec.EllipticCurvePublicKey):
+        issuer_public_key.verify(
+            subject.signature,
+            subject.tbs_certificate_bytes,
+            subject.signature_algorithm_parameters
+        )
+    elif isinstance(
+        issuer_public_key,
+        (ed25519.Ed25519PublicKey, ed448.Ed448PublicKey)
+    ):
+        issuer_public_key.verify(
+            subject.signature,
+            subject.tbs_certificate_bytes
+        )
+    elif isinstance(issuer_public_key, rsa.RSAPublicKey):
+        issuer.public_key().verify(
+            subject.signature,
+            subject.tbs_certificate_bytes,
+            PKCS1v15(),
+            subject.signature_hash_algorithm
+        )
 
 
 def get_issuer_certificate(subject: x509.Certificate) -> utils.CertificateList:
