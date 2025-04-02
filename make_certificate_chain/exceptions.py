@@ -10,6 +10,11 @@ class CertificateExpiredError(Exception):
 class NoIssuerCertificateError(Exception):
     pass
 
+
+class OCSPNonceFailed(Exception):
+    pass
+
+
 class OCSPVerificationFailed(Exception):
     def __init__(
         self,

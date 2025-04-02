@@ -5,6 +5,7 @@ import itertools
 import logging
 import os
 import re
+import secrets
 import ssl
 import subprocess
 import sys
@@ -206,7 +207,8 @@ def verify_against_ocsp(
     hash: typing.Union[SHA1, SHA256, None] = None,
     raise_error: bool = True,
     fallback_to_sha1: bool = True,
-    try_get_method: bool = True
+    try_get_method: bool = True,
+    check_nonce: bool = False  # OCSP Nonce is broken for now
 ) -> bool:
     "Check revocation"
     if not isinstance(cert, x509.Certificate):
@@ -223,7 +225,15 @@ def verify_against_ocsp(
         hash = SHA256()
     if not isinstance(hash, (SHA1, SHA256)):
         raise TypeError("Only SHA1 and SHA256 are supported")
-    ocsp_request_builder = ocsp.OCSPRequestBuilder((cert, issuer, hash))
+    if check_nonce:
+        nonce = secrets.token_bytes(16)
+        ocsp_nonce = x509.OCSPNonce(nonce)
+    ocsp_request_builder = ocsp.OCSPRequestBuilder(
+        (cert, issuer, hash),
+        extensions=[
+            x509.Extension(x509.OCSPNonce.oid, True, ocsp_nonce)
+        ] if check_nonce else []
+    )
     ocsp_request = ocsp_request_builder.build()
 
     ocsp_request_raw = ocsp_request.public_bytes(Encoding.DER)
@@ -281,7 +291,7 @@ def verify_against_ocsp(
             return verify_against_ocsp(
                 cert=cert, issuer=issuer, hash=type(hash)(),
                 raise_error=raise_error, fallback_to_sha1=fallback_to_sha1,
-                try_get_method=False
+                try_get_method=False, check_nonce=check_nonce
             )
         if raise_error:
             raise
@@ -300,6 +310,14 @@ def verify_against_ocsp(
                 f"{ocsp_response.response_status.name}"
             )
         return False
+
+    if check_nonce:
+        response_nonce = ocsp_response.extensions.get_extension_for_class(
+            x509.OCSPNonce
+        )
+        if response_nonce.value.nonce != nonce:
+            raise exceptions.OCSPNonceFailed()
+
     if (
         ocsp_response.certificate_status != ocsp.OCSPCertStatus.GOOD and
         raise_error

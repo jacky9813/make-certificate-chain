@@ -16,7 +16,8 @@ from . import utils
 def verify_certificate(
     subject: x509.Certificate,
     issuer: x509.Certificate,
-    expire_warning: typing.Optional[datetime.timedelta] = None
+    expire_warning: typing.Optional[datetime.timedelta] = None,
+    skip_ocsp_verification: bool = False
 ) -> None:
     """
         Verify a subject's certificate with:
@@ -87,7 +88,8 @@ def verify_certificate(
             subject.signature_hash_algorithm
         )
 
-    if subject != issuer:
+    if subject != issuer and not skip_ocsp_verification:
+        # Self-signed certificate cannot be revoked, I suppose?
         utils.verify_against_ocsp(subject, issuer)
 
 
