@@ -27,14 +27,8 @@ def verify_certificate(
         * Issuer's public key (signature check).
     """
     current_time = datetime.datetime.now(datetime.timezone.utc)
-    not_valid_before = subject.not_valid_before
-    not_valid_after = subject.not_valid_after
-    not_valid_after = not_valid_after.replace(
-        tzinfo=datetime.timezone.utc
-    )
-    not_valid_before = not_valid_before.replace(
-        tzinfo=datetime.timezone.utc
-    )
+    not_valid_before = subject.not_valid_before_utc
+    not_valid_after = subject.not_valid_after_utc
     if current_time < not_valid_before:
         warnings.warn(
             f'The certificate is valid after '
