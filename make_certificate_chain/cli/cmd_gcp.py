@@ -73,9 +73,11 @@ def gcp(
     capath: typing.Optional[str]
 ):
     """
-        Upload certificate chain to Google Cloud.
+    Upload certificate chain to Google Cloud.
 
-        Resource self-link will be shown in stdout after import.
+    Resource self-link will be shown in stdout after import.
+
+    For PKCS #12 or PFX files with private key bundled, KEY_IN is not required.
     """
     cert_raw = certificate_in.read()
     key_raw = None

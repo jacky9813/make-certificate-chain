@@ -68,9 +68,11 @@ def aws(
     capath: typing.Optional[str]
 ):
     """
-        Upload certificate chain to AWS Certificate Manager (ACM).
+    Upload certificate chain to AWS Certificate Manager (ACM).
 
-        Certificate ARN will be shown in stdout after import/reimport.
+    Certificate ARN will be shown in stdout after import/reimport.
+
+    For PKCS #12 or PFX files with private key bundled, KEY_IN is not required.
     """
 
     cert_raw = certificate_in.read()
