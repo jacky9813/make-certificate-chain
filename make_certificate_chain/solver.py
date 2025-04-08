@@ -140,7 +140,8 @@ def solve_cert_chain(
     expire_warning: typing.Optional[datetime.timedelta] = None,
     include_root_ca: bool = False,
     ignore_self_sign_warning: bool = False,
-    known_certificates: typing.Optional[utils.CertificateList] = None
+    known_certificates: typing.Optional[utils.CertificateList] = None,
+    skip_ocsp_verification: bool = False
 ) -> typing.Generator[x509.Certificate, None, None]:
     """
         Return a list that contains the certificate chain, with server
@@ -189,7 +190,12 @@ def solve_cert_chain(
     while True:
         issuer_cert = issuer_certs.pop()
         try:
-            verify_certificate(current_cert, issuer_cert, expire_warning)
+            verify_certificate(
+                current_cert,
+                issuer_cert,
+                expire_warning,
+                skip_ocsp_verification
+            )
         except Exception:
             if issuer_certs:
                 continue

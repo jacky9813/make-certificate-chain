@@ -57,6 +57,12 @@ logger = logging.getLogger(__name__)
     "file. Default store path depends on the operating system or OpenSSL "
     "configuration."
 )
+@click.option(
+    "--skip-ocsp",
+    help="Skip certificate revoke check via OCSP",
+    is_flag=True,
+    default=False
+)
 def aws(
     certificate_in: typing.BinaryIO,
     key_in: typing.Tuple[typing.BinaryIO, ...],
@@ -65,7 +71,8 @@ def aws(
     dry_run: bool,
     profile: typing.Optional[str],
     region: typing.Optional[str],
-    capath: typing.Optional[str]
+    capath: typing.Optional[str],
+    skip_ocsp: bool
 ):
     """
     Upload certificate chain to AWS Certificate Manager (ACM).
@@ -82,7 +89,8 @@ def aws(
 
     cert_pem, chain_pem, key_pem = common.build_pem_chain_and_key(
         cert_type, cert_raw, key_raw,
-        ca_path=capath or None
+        ca_path=capath or None,
+        skip_ocsp_verification=skip_ocsp
     )
 
     if dry_run:

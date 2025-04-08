@@ -43,11 +43,18 @@ logger = logging.getLogger(__name__)
     default="-",
     show_default=True
 )
+@click.option(
+    "--skip-ocsp",
+    help="Skip certificate revoke check via OCSP",
+    is_flag=True,
+    default=False
+)
 def output_only(
     certificate_in: typing.Tuple[typing.BinaryIO, ...],
     cert_type: str,
     capath: typing.Optional[str],
-    output: typing.TextIO
+    output: typing.TextIO,
+    skip_ocsp: bool
 ):
     """
         Output certificate chain to stdout.
@@ -64,7 +71,11 @@ def output_only(
 
     ca_certs = utils.get_system_ca(capath or None)
 
-    for cert in solver.solve_cert_chain(certs[0], ca_certs):
+    for cert in solver.solve_cert_chain(
+        certs[0],
+        ca_certs,
+        skip_ocsp_verification=skip_ocsp
+    ):
         logger.info("=" * common.PADDING_LENGTH)
         for line in common.output_info(cert).splitlines():
             logger.info(line)

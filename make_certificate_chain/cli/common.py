@@ -47,7 +47,8 @@ def build_pem_chain_and_key(
     cert_raw: bytes,
     key_raw: typing.Optional[bytes] = None,
     key_pass: typing.Optional[bytes] = None,
-    ca_path: typing.Optional[str] = None
+    ca_path: typing.Optional[str] = None,
+    skip_ocsp_verification: bool = False
 ) -> typing.Tuple[CertificatePEM, CertificateChainPEM, PrivateKeyPEM]:
     """
         Build certificate chain and private key in PEM format.
@@ -89,7 +90,11 @@ def build_pem_chain_and_key(
     logger.info("Building certificate chain in PEM format.")
     cert_pem_list = []
     logger.info("=" * PADDING_LENGTH)
-    for cert in solver.solve_cert_chain(certs[0], ca_certs):
+    for cert in solver.solve_cert_chain(
+        certs[0],
+        ca_certs,
+        skip_ocsp_verification=skip_ocsp_verification
+    ):
         for line in output_info(cert).splitlines():
             logger.info(line)
         logger.info("=" * PADDING_LENGTH)
