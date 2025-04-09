@@ -93,7 +93,7 @@ def split_certs(
 ):
     """
     Split a file that contains multiple certificates into multiple files.
-    Each file will be named after its
+    Each file will be named after one of the RDNs of the certificate subject.
     """
     os.makedirs(output_dir, exist_ok=True)
     if not certificate_in:
