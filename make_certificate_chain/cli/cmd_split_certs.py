@@ -36,27 +36,33 @@ RDN_PRIORITY = [
 ]
 
 
-def get_best_rdn(dn: x509.Name) -> typing.Iterable[x509.NameAttribute]:
-    labels = [
+def sort_filter_rdns(dn: x509.Name) -> typing.List[x509.NameAttribute]:
+    rdns = [
         attribute
         for rdn in dn.rdns
         for attribute in rdn._attributes
         if attribute.oid not in FILTERED_RDN
     ]
-    if labels[0].oid in INDISTINGUISHABLE_RDN:
-        return [l for l in labels[::-1] if l.oid not in INDISTINGUISHABLE_RDN]
-    if labels[-1].oid in INDISTINGUISHABLE_RDN:
-        return [l for l in labels if l.oid not in INDISTINGUISHABLE_RDN]
+    if rdns[0].oid in INDISTINGUISHABLE_RDN:
+        return [l for l in rdns[::-1] if l.oid not in INDISTINGUISHABLE_RDN]
+    if rdns[-1].oid in INDISTINGUISHABLE_RDN:
+        return [l for l in rdns if l.oid not in INDISTINGUISHABLE_RDN]
+
+    # If both first and last RDN are not indistinguishable, typically it means
+    # every RDNs can be used to identify the subject. Thus no need to filter
+    # like above.
     try:
-        left_priority = RDN_PRIORITY.index(labels[0].oid)
+        left_priority = RDN_PRIORITY.index(rdns[0].oid)
     except ValueError:
         left_priority = len(RDN_PRIORITY)
     try:
-        right_priority = RDN_PRIORITY.index(labels[-1].oid)
+        right_priority = RDN_PRIORITY.index(rdns[-1].oid)
     except ValueError:
         right_priority = len(RDN_PRIORITY)
     # Smaller number is higher priority
-    return labels[::-1] if right_priority < left_priority else labels
+    # Also, a typical name should already be ordered by the hierarchy unless
+    # you're some weirdo the does CN,O,OU shit in their certificate.
+    return rdns[::-1] if right_priority < left_priority else rdns
 
 
 @cli.command()
@@ -94,6 +100,12 @@ def split_certs(
     """
     Split a file that contains multiple certificates into multiple files.
     Each file will be named after one of the RDNs of the certificate subject.
+
+    The generated files will always be PEM encoded and have a file extension
+    of ".pem".
+
+    This tool will not overwrite files that are already exists and will create
+    a file with ".n" like "My Root CA.1.pem".
     """
     os.makedirs(output_dir, exist_ok=True)
     if not certificate_in:
@@ -104,9 +116,9 @@ def split_certs(
     ])
 
     for cert in certs:
-        labels = get_best_rdn(cert.subject)
-        for label in labels:
-            filename = f'{label.value}.pem'.replace("/", "_")
+        subject_rdns = sort_filter_rdns(cert.subject)
+        for rdn in subject_rdns:
+            filename = f'{rdn.value}.pem'.replace("/", "_")
             output_path = os.path.join(output_dir, filename)
             if not os.path.exists(output_path):
                 break
@@ -116,7 +128,7 @@ def split_certs(
             output_path = os.path.join(
                 output_dir,
                 "{}{}.pem".format(
-                    labels[0].value,
+                    subject_rdns[0].value,
                     f'.{loop_count}' if loop_count else ""
                 )
             )
