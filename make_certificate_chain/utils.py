@@ -21,6 +21,7 @@ from cryptography.x509 import ocsp
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.hashes import SHA1, SHA256
 import requests
+import urllib3.exceptions
 
 from . import exceptions
 
@@ -207,7 +208,7 @@ def verify_against_ocsp(
     hash: typing.Union[SHA1, SHA256, None] = None,
     raise_error: bool = True,
     fallback_to_sha1: bool = True,
-    try_get_method: bool = True,
+    try_get_method: bool = False,
     check_nonce: bool = False  # OCSP Nonce is broken for now
 ) -> bool:
     "Check revocation"
@@ -264,6 +265,7 @@ def verify_against_ocsp(
 
     try:
         if len(ocsp_get_url) > 255 or not try_get_method:
+            using_get = False
             response = requests.post(
                 ocsp_link,
                 data=ocsp_request_raw,
@@ -273,14 +275,22 @@ def verify_against_ocsp(
                 }
             )
         else:
+            using_get = True
             response = requests.get(
                 ocsp_get_url,
                 headers={"Accept": OCSP_RESP_MIME}
             )
-    except requests.ConnectionError as e:
+    except (requests.ConnectionError, urllib3.exceptions.SSLError) as e:
+        if using_get:
+            logger.info("Fallback to POST method")
+            return verify_against_ocsp(
+                cert=cert, issuer=issuer, hash=type(hash)(),
+                raise_error=raise_error, fallback_to_sha1=fallback_to_sha1,
+                try_get_method=False, check_nonce=check_nonce
+            )
+        logger.exception("Failed to connect to %s", ocsp_link)
         if raise_error:
             raise
-        logger.exception("Failed to connect to %s", ocsp_link)
         return False
 
     try:
@@ -288,6 +298,7 @@ def verify_against_ocsp(
     except requests.HTTPError:
         if response.request.method == "GET":
             logger.warning("GET method not supported for %s", ocsp_link)
+            logger.info("Fallback to POST method")
             return verify_against_ocsp(
                 cert=cert, issuer=issuer, hash=type(hash)(),
                 raise_error=raise_error, fallback_to_sha1=fallback_to_sha1,
