@@ -4,6 +4,7 @@ import sys
 
 import click
 import boto3
+from cryptography.hazmat.primitives.serialization import Encoding
 
 from .cli import cli
 from . import common
@@ -92,6 +93,13 @@ def aws(
         ca_path=capath or None,
         skip_ocsp_verification=skip_ocsp
     )
+
+    # For unknown reason, certificate chain of ACM certificate must not contain
+    # the server cert.
+    chain = utils.read_x509_certificates(chain_pem.encode())
+    chain_pem = (b"\n".join([
+        c.public_bytes(Encoding.PEM) for c in chain[1:]
+    ])).decode()
 
     if dry_run:
         print("\n".join([
