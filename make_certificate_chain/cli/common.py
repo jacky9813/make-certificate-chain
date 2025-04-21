@@ -48,7 +48,7 @@ def build_pem_chain_and_key(
     key_raw: typing.Optional[bytes] = None,
     key_pass: typing.Optional[bytes] = None,
     ca_path: typing.Optional[str] = None,
-    skip_ocsp_verification: bool = False
+    skip_revoke_check: bool = False
 ) -> typing.Tuple[CertificatePEM, CertificateChainPEM, PrivateKeyPEM]:
     """
         Build certificate chain and private key in PEM format.
@@ -93,7 +93,7 @@ def build_pem_chain_and_key(
     for cert in solver.solve_cert_chain(
         certs[0],
         ca_certs,
-        skip_ocsp_verification=skip_ocsp_verification
+        skip_revoke_check=skip_revoke_check
     ):
         for line in output_info(cert).splitlines():
             logger.info(line)

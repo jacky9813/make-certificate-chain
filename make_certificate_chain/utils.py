@@ -42,6 +42,12 @@ CertificateList = typing.Dict[str, typing.List[x509.Certificate]]
 logger = logging.getLogger(__name__)
 
 
+def _error(*msg, exc_type: Exception, raise_error: bool = True):
+    if raise_error:
+        raise exc_type(*msg)
+    logger.error(*msg)
+
+
 def read_x509_certificates(
     raw_data: bytes,
     password: typing.Optional[bytes] = None
@@ -210,7 +216,7 @@ def verify_against_ocsp(
     fallback_to_sha1: bool = True,
     try_get_method: bool = False,
     check_nonce: bool = False  # OCSP Nonce is broken for now
-) -> bool:
+) -> bool | None:
     "Check revocation"
     if not isinstance(cert, x509.Certificate):
         raise TypeError(
@@ -253,14 +259,16 @@ def verify_against_ocsp(
             "cert does not contain Authority Information Access extension "
             "with OCSP endpoint."
         )
-        return False
+        return
     if (
         not ocsp_link.startswith("http://") and
         not ocsp_link.startswith("https://")
     ):
-        raise NotImplementedError(
-            "Non-HTTP(S) OCSP Stapling endpoint not supported"
+        _error(
+            "Non-HTTP(S) OCSP Stapling endpoint not supported",
+            exc_type=NotImplementedError, raise_error=raise_error
         )
+        return
     ocsp_get_url = urllib.parse.urljoin(ocsp_link, ocsp_request_b64_url)
 
     try:
@@ -291,7 +299,7 @@ def verify_against_ocsp(
         logger.exception("Failed to connect to %s", ocsp_link)
         if raise_error:
             raise
-        return False
+        return
 
     try:
         response.raise_for_status()
@@ -306,7 +314,7 @@ def verify_against_ocsp(
             )
         if raise_error:
             raise
-        return False
+        return
 
     ocsp_response = ocsp.load_der_ocsp_response(response.content)
     if ocsp_response.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
@@ -315,27 +323,96 @@ def verify_against_ocsp(
                 "Failed to use SHA256 to call OCSP. Falling back to SHA1."
             )
             return verify_against_ocsp(cert, issuer, SHA1())
-        if raise_error:
-            raise Exception(
-                f"OCSP server \"{ocsp_link}\" Respond with "
-                f"{ocsp_response.response_status.name}"
-            )
-        return False
+        _error(
+            f"OCSP server \"{ocsp_link}\" Respond with "
+            f"{ocsp_response.response_status.name}",
+            exc_type=Exception, raise_error=raise_error
+        )
+        return
 
     if check_nonce:
         response_nonce = ocsp_response.extensions.get_extension_for_class(
             x509.OCSPNonce
         )
         if response_nonce.value.nonce != nonce:
-            raise exceptions.OCSPNonceFailed()
-
-    if (
-        ocsp_response.certificate_status != ocsp.OCSPCertStatus.GOOD and
-        raise_error
-    ):
-        raise exceptions.OCSPVerificationFailed(
-            cert=cert,
-            ocsp_source=ocsp_link,
-            ocsp_response=ocsp_response
+            _error(
+                "Failed to check nonce in OCSP response",
+                exc_type=exceptions.OCSPNonceFailed, raise_error=raise_error
+            )
+            return
+    if ocsp_response.certificate_status != ocsp.OCSPCertStatus.GOOD:
+        _error(
+            "OCSP status for %s is %s", cert.subject.rfc4514_string(),
+            ocsp_response.certificate_status.name,
+            exc_type=exceptions.OCSPVerificationFailed, raise_error=raise_error
         )
     return ocsp_response.certificate_status == ocsp.OCSPCertStatus.GOOD
+
+
+def get_crl_download_link(cert: x509.Certificate) -> str | None:
+    crl_dp = None
+    try:
+        crl_dp = cert.extensions.get_extension_for_class(
+            x509.CRLDistributionPoints)
+    except x509.ExtensionNotFound:
+        pass
+    if crl_dp and len(crl_dp.value):
+        return crl_dp.value[0].full_name[0].value
+
+
+def load_x509_crl(raw: bytes) -> x509.CertificateRevocationList:
+    if b'-----BEGIN X509 CRL-----' in raw:
+        try:
+            return x509.load_pem_x509_crl(raw)
+        except ValueError:
+            pass
+    return x509.load_der_x509_crl(raw)
+
+
+def get_crl_from_cert(
+    cert: x509.Certificate,
+    raise_error: bool = True
+) -> x509.CertificateRevocationList | None:
+    download_link = get_crl_download_link(cert)
+    if not download_link:
+        _error(
+            "Unable to get CRL distribution point from certificate",
+            exc_type=ValueError, raise_error=raise_error
+        )
+        return
+    try:
+        crl_response = requests.get(download_link)
+        crl_response.raise_for_status()
+    except (requests.HTTPError, requests.ConnectionError, requests.Timeout):
+        if raise_error:
+            raise
+        return
+    try:
+        return load_x509_crl(crl_response.content)
+    except ValueError:
+        if raise_error:
+            raise
+
+
+def verify_against_crl(
+    cert: x509.Certificate,
+    raise_error: bool = True
+) -> bool:
+    crl = get_crl_from_cert(cert, raise_error)
+    if not crl:
+        # No CRL available, which we should treat the certificate as not
+        # revoked
+        return True
+    revoked = crl.get_revoked_certificate_by_serial_number(cert.serial_number)
+    return not revoked
+
+
+def check_revoke(
+    cert: x509.Certificate,
+    issuer: x509.Certificate
+) -> bool | None:
+    not_revoked = verify_against_ocsp(cert, issuer, raise_error=False)
+    if not_revoked is None:
+        logger.info("Failed to check against OCSP. Using CRL instead.")
+        not_revoked = verify_against_crl(cert, raise_error=False)
+    return not_revoked

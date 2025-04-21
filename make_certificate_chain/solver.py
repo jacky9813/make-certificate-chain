@@ -17,7 +17,7 @@ def verify_certificate(
     subject: x509.Certificate,
     issuer: x509.Certificate,
     expire_warning: typing.Optional[datetime.timedelta] = None,
-    skip_ocsp_verification: bool = False
+    skip_revoke_check: bool = False
 ) -> None:
     """
         Verify a subject's certificate with:
@@ -82,9 +82,19 @@ def verify_certificate(
             subject.signature_hash_algorithm
         )
 
-    if subject != issuer and not skip_ocsp_verification:
+    if subject != issuer and not skip_revoke_check:
         # Self-signed certificate cannot be revoked, I suppose?
-        utils.verify_against_ocsp(subject, issuer)
+        revoke_status = utils.check_revoke(subject, issuer)
+        if revoke_status is None:
+            raise RuntimeError(
+                f'Unable to verify revoke status for '
+                f'{subject.subject.rfc4514_string()}'
+            )
+        if revoke_status == False:
+            raise ValueError(
+                f'Certificate for "{subject.subject.rfc4514_string()}" is '
+                'revoked'
+            )
 
 
 def get_issuer_certificate(subject: x509.Certificate) -> utils.CertificateList:
@@ -141,7 +151,7 @@ def solve_cert_chain(
     include_root_ca: bool = False,
     ignore_self_sign_warning: bool = False,
     known_certificates: typing.Optional[utils.CertificateList] = None,
-    skip_ocsp_verification: bool = False
+    skip_revoke_check: bool = False
 ) -> typing.Generator[x509.Certificate, None, None]:
     """
         Return a list that contains the certificate chain, with server
@@ -194,7 +204,7 @@ def solve_cert_chain(
                 current_cert,
                 issuer_cert,
                 expire_warning,
-                skip_ocsp_verification
+                skip_revoke_check
             )
         except Exception:
             if issuer_certs:

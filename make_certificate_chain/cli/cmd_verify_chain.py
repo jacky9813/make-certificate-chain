@@ -28,25 +28,23 @@ logger = logging.getLogger(__name__)
     "configuration."
 )
 @click.option(
-    "--skip-ocsp",
-    help="Skip certificate revoke check via OCSP",
+    "--skip-revoke-check",
+    help="Skip certificate revoke check via OCSP or CRL",
     is_flag=True,
     default=False
 )
 def verify_chain(
     certificate_in: typing.Tuple[typing.BinaryIO, ...],
     capath: typing.Optional[str],
-    skip_ocsp: bool
+    skip_revoke_check: bool
 ):
     """
         Output certificate chain to stdout.
 
         Leave certificate_in blank for reading from stdin.
     """
-    if skip_ocsp:
-        logger.warning(
-            "Will not check certificate revocation with OCSP stapling"
-        )
+    if skip_revoke_check:
+        logger.warning("Will not check certificate revocation")
 
     cert_chain = list(itertools.chain(*[
         utils.read_x509_certificates(cert_fd.read())
@@ -80,7 +78,7 @@ def verify_chain(
         logger.info("Subject: %s", subject.subject.rfc4514_string())
         logger.info("Issuer: %s", issuer.subject.rfc4514_string())
         solver.verify_certificate(
-            subject, issuer, skip_ocsp_verification=skip_ocsp
+            subject, issuer, skip_revoke_check=skip_revoke_check
         )
         logger.info("")
         logger.info("Verify: OK")

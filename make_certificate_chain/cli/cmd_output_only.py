@@ -74,7 +74,7 @@ def output_only(
     for cert in solver.solve_cert_chain(
         certs[0],
         ca_certs,
-        skip_ocsp_verification=skip_ocsp
+        skip_revoke_check=skip_ocsp
     ):
         logger.info("=" * common.PADDING_LENGTH)
         for line in common.output_info(cert).splitlines():

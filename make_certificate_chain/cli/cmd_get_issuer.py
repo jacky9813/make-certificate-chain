@@ -61,7 +61,7 @@ def get_issuer(
         solver.verify_certificate(
             certs[0],
             issuer_cert,
-            skip_ocsp_verification=True
+            skip_revoke_check=True
         )
         print(issuer_cert.public_bytes(Encoding.PEM).decode().strip())
         break
