@@ -1,4 +1,5 @@
 import datetime
+import socket
 import ssl
 
 from cryptography import x509
@@ -12,6 +13,18 @@ from cryptography.hazmat.primitives.serialization import BestAvailableEncryption
 import pytest
 
 from make_certificate_chain import solver
+
+
+def get_remote_cert(hostname: str, port: int = 443) -> bytes:
+    ctx = ssl.create_default_context()
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    with socket.create_connection((hostname, port)) as sock:
+        with ctx.wrap_socket(sock, server_hostname=hostname) as sslsock:
+            cert = sslsock.getpeercert(True)
+    if cert:
+        return ssl.DER_cert_to_PEM_cert(cert).encode()
+    raise ValueError(f'Failed to fetch certificate from {hostname}')
+
 
 @pytest.fixture
 def self_sign_cert() -> x509.Certificate:
@@ -142,17 +155,16 @@ def cert_with_invalid_signature() -> x509.Certificate:
 @pytest.fixture
 def example_com_cert() -> bytes:
     # Testing X509 certificate
-    cert = ssl.get_server_certificate(("www.example.com", 443))
-    return cert.encode()
+    return get_remote_cert("www.example.com")
 
 
 @pytest.fixture
 def example_com_cert_pkcs12() -> bytes:
-    cert = ssl.get_server_certificate(("www.example.com", 443))
+    cert = get_remote_cert("www.example.com")
     return pkcs12.serialize_key_and_certificates(
         name=None,
         key=None,
-        cert=x509.load_pem_x509_certificate(cert.encode()),
+        cert=x509.load_pem_x509_certificate(cert),
         cas=None,
         encryption_algorithm=BestAvailableEncryption(b'12345678')
     )
@@ -161,8 +173,8 @@ def example_com_cert_pkcs12() -> bytes:
 @pytest.fixture
 def epki_com_tw_cert() -> bytes:
     # Testing PKCS7 certificates
-    cert = ssl.get_server_certificate(("epki.com.tw", 443))
+    cert = get_remote_cert("epki.com.tw")
     return pkcs7.serialize_certificates(
-        [x509.load_pem_x509_certificate(cert.encode())],
+        [x509.load_pem_x509_certificate(cert)],
         encoding=Encoding.PEM
     )
