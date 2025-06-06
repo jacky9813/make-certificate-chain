@@ -216,7 +216,7 @@ def verify_against_ocsp(
     fallback_to_sha1: bool = True,
     try_get_method: bool = False,
     check_nonce: bool = False  # OCSP Nonce is broken for now
-) -> bool | None:
+) -> typing.Optional[bool]:
     "Check revocation"
     if not isinstance(cert, x509.Certificate):
         raise TypeError(
@@ -349,7 +349,7 @@ def verify_against_ocsp(
     return ocsp_response.certificate_status == ocsp.OCSPCertStatus.GOOD
 
 
-def get_crl_download_link(cert: x509.Certificate) -> str | None:
+def get_crl_download_link(cert: x509.Certificate) -> typing.Optional[str]:
     crl_dp = None
     try:
         crl_dp = cert.extensions.get_extension_for_class(
@@ -372,7 +372,7 @@ def load_x509_crl(raw: bytes) -> x509.CertificateRevocationList:
 def get_crl_from_cert(
     cert: x509.Certificate,
     raise_error: bool = True
-) -> x509.CertificateRevocationList | None:
+) -> typing.Optional[x509.CertificateRevocationList]:
     download_link = get_crl_download_link(cert)
     if not download_link:
         _error(
@@ -410,7 +410,7 @@ def verify_against_crl(
 def check_revoke(
     cert: x509.Certificate,
     issuer: x509.Certificate
-) -> bool | None:
+) -> typing.Optional[bool]:
     not_revoked = verify_against_ocsp(cert, issuer, raise_error=False)
     if not_revoked is None:
         logger.info("Failed to check against OCSP. Using CRL instead.")
