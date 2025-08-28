@@ -49,10 +49,13 @@ def verify_chain(
     if not certificate_in:
         certificate_in = [sys.stdin.buffer]
 
-    cert_chain = list(itertools.chain(*[
-        utils.read_x509_certificates(cert_fd.read())
-        for cert_fd in certificate_in
-    ]))
+    cert_chain = [
+        (cert, False)
+        for cert in itertools.chain(*[
+            utils.read_x509_certificates(cert_fd.read())
+            for cert_fd in certificate_in
+        ])
+    ]
     if not cert_chain:
         logger.critical("No certificate found in file.")
         sys.exit(1)
@@ -61,9 +64,9 @@ def verify_chain(
 
     ca_certs = utils.get_system_ca(capath or None)
 
-    if cert_chain[-1].subject != cert_chain[-1].issuer:
+    if cert_chain[-1][0].subject != cert_chain[-1][0].issuer:
         # add root ca to the end
-        ca_name = cert_chain[-1].issuer.rfc4514_string()
+        ca_name = cert_chain[-1][0].issuer.rfc4514_string()
         root_ca_cert = ca_certs.get(ca_name)
         if root_ca_cert:
             ca_cert = root_ca_cert[0]
@@ -71,23 +74,24 @@ def verify_chain(
                 'Using Root CA certificate "%s"',
                 ca_cert.subject.rfc4514_string()
             )
-            cert_chain.append(ca_cert)
+            cert_chain.append((ca_cert, True))
         else:
             logger.warning('CA certificate for "%s" not found', ca_name)
+    else:
+        logger.warning("Root CA should not be provided in certificate chain.")
 
-    for subject, issuer in zip(cert_chain[:-1], cert_chain[1:]):
+    for (subject, _), (issuer, from_system) in zip(cert_chain[:-1], cert_chain[1:]):
         logger.info("=" * common.PADDING_LENGTH)
         logger.info("Verifying:")
-        logger.info("Not Before:   %s", utils.format_datetime(
-            subject.not_valid_before_utc
-        ))
-        logger.info("Not After:    %s", utils.format_datetime(
-            subject.not_valid_after_utc
-        ))
-        logger.info("Cert Subject: %s", subject.subject.rfc4514_string())
-        logger.info("Cert Issuer:  %s", subject.issuer.rfc4514_string())
-        logger.info("CA Subject:   %s", issuer.subject.rfc4514_string())
-        logger.info("CA Issuer:    %s", issuer.issuer.rfc4514_string())
+        logger.info("Not Before:     %s", utils.format_datetime(
+            subject.not_valid_before_utc))
+        logger.info("Not After:      %s", utils.format_datetime(
+            subject.not_valid_after_utc))
+        logger.info("Cert Subject:   %s", subject.subject.rfc4514_string())
+        logger.info("Cert Issuer:    %s", subject.issuer.rfc4514_string())
+        logger.info("CA Subject:     %s", issuer.subject.rfc4514_string())
+        logger.info("CA Issuer:      %s", issuer.issuer.rfc4514_string())
+        logger.info("CA Cert Source: %s", "System" if from_system else "Chain")
         solver.verify_certificate(
             subject, issuer, skip_revoke_check=skip_revoke_check
         )
