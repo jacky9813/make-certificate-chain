@@ -46,6 +46,9 @@ def verify_chain(
     if skip_revoke_check:
         logger.warning("Will not check certificate revocation")
 
+    if not certificate_in:
+        certificate_in = [sys.stdin.buffer]
+
     cert_chain = list(itertools.chain(*[
         utils.read_x509_certificates(cert_fd.read())
         for cert_fd in certificate_in
