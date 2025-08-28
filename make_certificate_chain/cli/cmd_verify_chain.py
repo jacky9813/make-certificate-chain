@@ -78,6 +78,12 @@ def verify_chain(
     for subject, issuer in zip(cert_chain[:-1], cert_chain[1:]):
         logger.info("=" * common.PADDING_LENGTH)
         logger.info("Verifying:")
+        logger.info("Not Before: %s", utils.format_datetime(
+            subject.not_valid_before_utc
+        ))
+        logger.info("Not After: %s", utils.format_datetime(
+            subject.not_valid_after_utc
+        ))
         logger.info("Cert Subject: %s", subject.subject.rfc4514_string())
         logger.info("Cert Issuer: %s", subject.issuer.rfc4514_string())
         logger.info("CA Subject: %s", issuer.subject.rfc4514_string())

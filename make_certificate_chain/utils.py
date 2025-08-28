@@ -1,4 +1,5 @@
 import base64
+import datetime
 import getpass
 import glob
 import itertools
@@ -416,3 +417,13 @@ def check_revoke(
         logger.info("Failed to check against OCSP. Using CRL instead.")
         not_revoked = verify_against_crl(cert, raise_error=False)
     return not_revoked
+
+def format_datetime(
+    dt: datetime.datetime,
+    tz: datetime.timezone = datetime.timezone.utc
+) -> str:
+    fmt = (
+        "%Y-%m-%dT%H:%M:%SZ" if tz == datetime.timezone.utc
+        else "%Y-%m-%dT%H:%M:%S%z"
+    )
+    return dt.astimezone(tz).strftime(fmt)
