@@ -73,7 +73,7 @@ System Requirements
 .. _AWS CLI: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
 .. _Google Cloud CLI: https://cloud.google.com/sdk/docs/install
 
-- Python 3.8 or later
+- Python 3.10 or later
 
 - For import certificate to cloud services:
 
