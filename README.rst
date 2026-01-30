@@ -57,11 +57,14 @@ Supported Importing Destinations
 ================================
 
 .. _AWS Certificate Manager: https://docs.aws.amazon.com/acm/latest/userguide/import-certificate-api-cli.html
-.. _Global/Regional SSL Certificates: https://cloud.google.com/load-balancing/docs/ssl-certificates/self-managed-certs
+.. _Global/Regional SSL Certificates: https://docs.cloud.google.com/load-balancing/docs/ssl-certificates/self-managed-certs
+.. _Certificate Manager Certificates: https://docs.cloud.google.com/certificate-manager/docs/certificates#cert-self
 
 - AWS - `AWS Certificate Manager`_ (ACM)
 
-- Google Cloud - `Compute Engine Global/Regional SSL Certificates`_
+- Google Cloud
+    - `Compute Engine Global/Regional SSL Certificates`_
+    - `Certificate Manager Certificates`_
 
 
 System Requirements
@@ -92,8 +95,12 @@ Usage
 
 .. note::
 
-    Unlike OpenSSL, this program detects the format automatically, so you don't
-    have to put ``-inform`` equivalent parameter.
+    Unlike OpenSSL, this program detects the certificate **encoding format**
+    automatically, so you don't have to put ``-inform DER`` or equivalent
+    parameter.
+
+    You still have to specify the **container format** for certificates in
+    PKCS#7 and PKCS#12 containers with ``--cert-type`` parameter.
 
 Example 1: Simple usage
 -----------------------
@@ -110,7 +117,7 @@ Example 2: Piped from stdout
 
     echo "" | openssl s_client -connect www.example.com:443 | mkcertchain output-only > example.com.chain.pem
 
-Example 3: Create SSL Certificate in Google Cloud
+Example 3: Create SSL Certificate in Google Cloud Compute Engine
 -------------------------------------------------
 
 .. code-block:: shell
@@ -120,21 +127,45 @@ Example 3: Create SSL Certificate in Google Cloud
     # The following command will ask password for private key, even it's
     # unencrypted. In such case, input nothing but enter when prompted for
     # password.
-    mkcertchain gcp --project my-project my-certificate server.cert.pem server.key.pem
+    mkcertchain gcp \
+        --project my-project my-certificate\
+        server.cert.pem server.key.pem
 
-Example 4: Create SSL Certificate in AWS with PKCS#12 bundle
+
+Example 4: Create SSL Certificate in Google Cloud Certificate Manager
+---------------------------------------------------------------------
+
+.. code-block:: shell
+
+    # Log into Google Cloud and update Application Default Credentials
+    gcloud auth application-default login
+    # The following command will ask password for private key, even if it's
+    # unencrypted. In such case, input nothing but enter when prompted for
+    # password.
+    mkcertchain gcp \
+        --api certificatemanager \
+        --project my-project my-certificate \
+        server.cert.pem server.key.pem
+
+
+Example 5: Create SSL Certificate in AWS with PKCS#12 bundle
 ------------------------------------------------------------
 
 .. code-block:: shell
 
-    # The following command will ask password for unpack PKCS#12 bundle, even it's unencrypted.
+    # The following command will ask password for unpack PKCS#12 bundle, even
+    # if it's unencrypted.
     # In such case, input nothing but enter when prompted for password.
-    mkcertchain aws --cert-type=pkcs12 --profile=aws-cli-profile --region=ap-northeast-1 server.pfx
+    mkcertchain aws --cert-type=pkcs12 \
+        --profile=aws-cli-profile --region=ap-northeast-1 \
+        server.pfx
 
-Example 5: Via Python module
+Example 6: Call CLI via Python module
 ----------------------------
 
 .. code-block:: shell
 
     python3 -m make_certificate_chain --help
+    # This is effectively the same as the following
+    # mkcertchain --help
 
