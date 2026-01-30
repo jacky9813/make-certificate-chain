@@ -4,8 +4,10 @@ from cryptography.exceptions import InvalidSignature
 from cryptography import x509
 from cryptography.x509 import ocsp
 
+
 class CertificateExpiredError(Exception):
     pass
+
 
 class NoIssuerCertificateError(Exception):
     pass

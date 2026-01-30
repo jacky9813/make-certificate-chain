@@ -84,4 +84,3 @@ def output_only(
             cert.public_bytes(Encoding.PEM).decode().strip(),
             file=output
         )
-

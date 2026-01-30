@@ -104,7 +104,7 @@ def _certmgr_upload(
         name=name,
         description=description,
         self_managed=certificate_manager_v1.Certificate.SelfManagedCertificate(
-            pem_certificate = chain_pem,
+            pem_certificate=chain_pem,
             pem_private_key=key_pem),
         **(
             {"scope": getattr(certificate_manager_v1.Certificate.Scope, scope)}
@@ -256,4 +256,3 @@ def gcp(
             chain_pem=chain_pem, key_pem=key_pem, description=description,
             scope=scope
         )
-

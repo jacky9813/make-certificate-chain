@@ -122,7 +122,7 @@ def read_certificate_file(
     return certs
 
 
-def get_system_ca(path = None) -> CertificateList:
+def get_system_ca(path=None) -> CertificateList:
     """
         Get the certificates from the system's CA list.
     """
@@ -417,6 +417,7 @@ def check_revoke(
         logger.info("Failed to check against OCSP. Using CRL instead.")
         not_revoked = verify_against_crl(cert, raise_error=False)
     return not_revoked
+
 
 def format_datetime(
     dt: datetime.datetime,

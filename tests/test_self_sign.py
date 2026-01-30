@@ -17,5 +17,3 @@ def test_self_sign(self_sign_cert: x509.Certificate):
             expire_warning=datetime.timedelta(days=15)
         ))
     assert response == [self_sign_cert]
-
-

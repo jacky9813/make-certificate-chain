@@ -41,7 +41,7 @@ def verify_certificate(
             f'expired at {not_valid_after.strftime("%Y-%m-%dT%H:%M:%SZ")}'
         )
     if expire_warning is not None and \
-        (current_time + expire_warning) > not_valid_after:
+            (current_time + expire_warning) > not_valid_after:
         warnings.warn(
             f'The certificate is about to expire. '
             f'Expiration date: {not_valid_after.strftime("%Y-%m-%dT%H:%M:%SZ")}',
@@ -191,7 +191,8 @@ def solve_cert_chain(
         issuer_certs = ca_certificates[issuer_name]
         issuer_is_root_ca = True
     else:
-        issuer_certs = get_issuer_certificate(current_cert).get(issuer_name, [])
+        issuer_certs = get_issuer_certificate(
+            current_cert).get(issuer_name, [])
         known_certificates[issuer_name] = issuer_certs
 
     if not issuer_certs:

@@ -129,8 +129,10 @@ def cert_with_invalid_signature() -> x509.Certificate:
         subject_name=dn,
         public_key=private_key.public_key(),
         serial_number=x509.random_serial_number(),
-        not_valid_before=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30),
-        not_valid_after=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1),
+        not_valid_before=datetime.datetime.now(
+            datetime.timezone.utc) - datetime.timedelta(days=30),
+        not_valid_after=datetime.datetime.now(
+            datetime.timezone.utc) + datetime.timedelta(days=1),
     ).add_extension(
         x509.SubjectAlternativeName([x509.DNSName(FQDN)]),
         critical=False
@@ -149,7 +151,6 @@ def cert_with_invalid_signature() -> x509.Certificate:
             algorithm=hashes.SHA384()
         )
     return cert
-
 
 
 @pytest.fixture

@@ -15,7 +15,7 @@ from .. import solver
 
 logger = logging.getLogger(__name__)
 
-INFO_OUTPUT: typing.Dict[str, typing.Callable[[x509.Certificate], str]]={
+INFO_OUTPUT: typing.Dict[str, typing.Callable[[x509.Certificate], str]] = {
     "Subject": lambda cert: cert.subject.rfc4514_string(),
     "Issuer": lambda cert: cert.issuer.rfc4514_string(),
     "Not Before": lambda cert: cert.not_valid_before_utc.strftime(

@@ -6,7 +6,7 @@ Make Certificate Chain
 
 .. _TLS 1.2 Server Certificate: https://datatracker.ietf.org/doc/html/rfc5246#section-7.4.2
 
-This program helps system administrators to configure a Web Service that 
+This program helps system administrators to configure a Web Service that
 provides full SSL/TLS chain when handshaking.
 
 With server provides all the certificates needed, it is possible to gain a
@@ -15,7 +15,7 @@ little performance benefit for client verifying the server certificate.
 The output of the certificate chain will follow the requirements for
 `TLS 1.2 Server Certificate`_
 
-.. note:: 
+.. note::
     This program leverages on the existence of CAIssuers field in the authority
     information access extension (OID: ``1.3.6.1.5.5.7.48.2``).
 
@@ -168,4 +168,3 @@ Example 6: Call CLI via Python module
     python3 -m make_certificate_chain --help
     # This is effectively the same as the following
     # mkcertchain --help
-

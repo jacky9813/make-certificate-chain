@@ -1,0 +1,28 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-toml
+      - id: detect-aws-credentials
+      - id: detect-private-key
+        exclude: make_certificate_chain/cli/common.py
+      - id: mixed-line-ending
+        args:
+          - --fix=no
+      # - id: no-commit-to-branch
+      #   args:
+      #     - -b
+      #     - master
+  - repo: https://github.com/hhatto/autopep8
+    rev: v2.3.1
+    hooks:
+      - id: autopep8

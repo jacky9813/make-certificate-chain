@@ -7,7 +7,7 @@ from make_certificate_chain import utils
 def test_simple(example_com_cert: bytes):
     cert = utils.read_x509_certificates(example_com_cert)
     chain = list(solver.solve_cert_chain(cert[0], include_root_ca=True))
-    assert len(chain) > 2 # Expect more than 2 as root CA is included
+    assert len(chain) > 2  # Expect more than 2 as root CA is included
     sans = [
         san.value
         for san in chain[0].extensions.get_extension_for_class(x509.SubjectAlternativeName).value

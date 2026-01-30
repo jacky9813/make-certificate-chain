@@ -11,4 +11,3 @@ def list_system_ca():
 
     for ca_subject in sorted(ca_list.keys(), key=lambda t: t.lower()):
         print(ca_subject)
-

@@ -13,6 +13,7 @@ from .. import utils
 
 logger = logging.getLogger(__name__)
 
+
 @cli.command()
 @click.argument(
     "certificate_in",
